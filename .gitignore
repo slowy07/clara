@@ -1,0 +1,35 @@
+# Compiled object files
+*.o
+*.out
+
+# Compiled dynamic libraries
+*.so
+*.dll
+
+# Compiled static libraries
+*.a
+*.lib
+
+# Executables
+*.exe
+
+# Build directories
+build/
+bin/
+
+# IDE-specific files and directories
+.vscode/
+.idea/
+
+# Dependency directories (specific to your build system)
+# For example, if you use CMake:
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Ignore any files generated during the build process
+# For example, if you use CMake and build in a directory named 'build':
+/build/
+
+clara
+
