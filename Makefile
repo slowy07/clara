@@ -25,11 +25,13 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: release
 
 # Release make configuration
-release: CFLAGS += $(CFLAGS_RELEASE) 
+release: CFLAGS += $(CFLAGS_RELEASE)
+release: LDFLAGS += $(MULTIPROC)
 release: $(SOURCES) $(TARGET)
 
 # Debug make configuration
 debug: CFLAGS += $(CFLAGS_DEBUG)
+debug: LDFLAGS += $(MULTIPROC)
 debug: $(SOURCES) $(TARGET) 
 
 
