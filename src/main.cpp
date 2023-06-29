@@ -12,17 +12,15 @@ using namespace clara::types;
 int main() {
   _init();
 
-  stat::UniformRealDistribution a(-2, 2);
-  cout << endl << a.sample() << endl;
-
-  stat::NormalDistribution b;
-  cout << endl << b.sample() << endl;
+  vector<size_t> dims={2, 3, 4, 5, 6, 7};
+  vector<size_t> subsys={1, 2, 4};
+  size_t dim = 5040;
   
-  cmat A = cmat::Random(2, 2);
-  cout << endl;
-  disp(A);
-
-  cout << endl;
-  int n = 41;
-  cout << "the " << n << " root of unity is: " << ct::omega(n) << endl;
+  size_t cnt = 0;
+  cmat A(dim, dim);
+  for (size_t i = 0; i<dim; i++)
+    for (size_t j = 0; j<dim; j++)
+      A(i, j) = cnt++;
+  disp(ptrace(A, dims, subsys));
+  cout<<endl<<norm(ptrace(A, dims, subsys)) << endl;
 }
