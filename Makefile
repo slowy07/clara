@@ -13,14 +13,14 @@ EIGEN = /usr/include/eigen3
 CFLAGS = -c -pedantic $(CC_STANDARD) $(WARNINGS) $(MULTIPROC) $(OPTIM)\
 				 -isystem $(EIGEN) -I $(INC)
 
-CFLAGS_RELEASE = -O2 -DNDEBUG -DEIGEN_NO_DEBUG # Release flags
+CFLAGS_RELEASE = -O3 -DNDEBUG -DEIGEN_NO_DEBUG # Release flags
 CFLAGS_DEBUG = -DDEBUG -g3 # Debug flags
 
 # Use gomp multi-processing library
 LDFLAGS = -lgomp
 
 SOURCES = $(wildcard $(SRC)/*.cpp)
-OBJECTS = $(SOURCES:.cpp=.o)
+OBJECTS = $(filter-out clara.o, $(SOURCES:.cpp=.o))
 
 all: release
 
@@ -40,6 +40,8 @@ $(TARGET): $(OBJECTS)
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
+	@echo 'Usage: '
+	@uptime
 
 # Clean-up
 clean:

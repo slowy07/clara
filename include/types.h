@@ -22,6 +22,10 @@ typedef Eigen::RowVector2cd bra2;
 typedef Eigen::RowVector3cd bra3;
 typedef Eigen::RowVector4cd bra4;
 typedef Eigen::RowVectorXcd bra;
+
+typedef Eigen::VectorXcd cvect;
+typedef Eigen::VectorXi ivect;
+
 }
 }
 

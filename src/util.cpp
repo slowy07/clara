@@ -36,11 +36,41 @@ types::cmat kron_list(const std::vector<types::cmat>& list) {
 }
 
 // kronecker product a matrix with itself $n$ times
-types::cmat kronn(const types::cmat &A, size_t n) {
+types::cmat kron_pow(const types::cmat &A, size_t n) {
   std::vector<types::cmat> list;
   for (size_t i = 0; i < n; i++)
     list.push_back(A);
   return kron_list(list);
+}
+
+// integer index to multi index
+void _n2multiidx(const size_t n, const size_t numdims, const size_t *dims, size_t *result) {
+  size_t maxn = 1;
+  for (size_t i = 0; i < numdims; i++)
+    maxn *= dims[i];
+  if (n > maxn - 1)
+    throw std::runtime_error("number to large, out of bound");
+
+  size_t _n = n;
+  for (size_t i = 0; i < numdims; i++) {
+    result[numdims - i - 1] = _n % static_cast<int>(dims[numdims - i - 1]);
+    _n = _n / static_cast<int>(dims[numdims - i - 1]);
+  }
+}
+
+size_t _multiidx2n(const size_t *midx, size_t numdims, const size_t *dims) {
+  for (size_t i = 0; i < numdims; i++)
+    if (midx[i] >= dims[i])
+      throw std::runtime_error("sub index exceeds corresponding dimension");
+  size_t *part_prod = new size_t[numdims];
+  part_prod[numdims - 1] = 1;
+  for (size_t j = 1; j < numdims; j++)
+    part_prod[numdims - j - 1] = part_prod[numdims - j] * dims[numdims - j];
+  size_t result = 0;
+  for (size_t i = 0; i < numdims; i++)
+    result += midx[i] * part_prod[i];
+  delete[] part_prod;
+  return result;
 }
 
 // partial tace over subsystem
@@ -54,23 +84,22 @@ types::cmat ptrace2(const types::cmat &AB, const std::vector<size_t> dims) {
     throw std::runtime_error(
       "product of partial dimension must equal the dimension of the matrix"
     );
-  types::cmat Aij = types::cmat::Zero(DB, DB);
   types::cmat result = types::cmat::Zero(DA, DA);
   for (size_t i = 0; i < DA; i++)
+    #pragma omp parallel for
     for (size_t j = 0; j < DA; j++) {
-      Aij = AB.block(i * DB, j * DB, DB, DB);
-      result(i, j) = trace(Aij);
+      result(i, j) = trace(static_cast<types::cmat>(AB.block(i * DB, j * DB, DB, DB)));
     }
   return result;
 }
 
 // permute the subsys in cmat
-types::cmat syspermute(const types::cmat &A, const std::vector<size_t> &dims, const std::vector<size_t> perm) {
+types::cmat syspermute(const types::cmat &A, const std::vector<size_t> perm, const std::vector<size_t> &dims) {
   size_t dimA = static_cast<size_t>(A.rows());
   if (dimA != static_cast<size_t>(A.cols()))
     throw std::runtime_error("matrix must be square");
 
-  size_t numdims = dims.size();
+  const size_t numdims = dims.size();
   if (numdims != perm.size())
     throw std::runtime_error("invalid permutation size");
   
@@ -97,36 +126,57 @@ types::cmat syspermute(const types::cmat &A, const std::vector<size_t> &dims, co
     throw std::runtime_error("dimension mismatch");
 
   types::cmat result(dimA, dimA);
-  std::vector<size_t> midxrow(numdims);
-  std::vector<size_t> midxcol(numdims);
-	std::vector<size_t> midxrowtmp(numdims);
-	std::vector<size_t> midxcoltmp(numdims);
-	std::vector<size_t> permdims(numdims);
+  size_t *cdims = new size_t[numdims];
+  size_t *cperm = new size_t[numdims];
+  
+  for (size_t i = 0; i < numdims; i++) {
+    cdims[i] = dims[i];
+    cperm[i] = perm[i];
+  }
   size_t iperm = 0;
   size_t jperm = 0;
-  
-  for (size_t i = 0; i < numdims; i++)
-    permdims[i] = dims[perm[i]];
 
   for (size_t i = 0; i < dimA; i++)
-    for (size_t j = 0; j < dimA; j++) {
-      midxrow = n2multiidx(i, dims);
-			midxrowtmp = midxrow;
-			midxcol = n2multiidx(j, dims);
-			midxcoltmp = midxcol;
-      for (size_t k = 0; k < numdims; k++) {
-        midxrowtmp[k] = midxrow[perm[k]];
-        midxcoltmp[k] = midxcol[perm[k]];
-      }
-      iperm = multiidx2n(midxrowtmp, permdims);
-      jperm = multiidx2n(midxcoltmp, permdims);
-      result(iperm, jperm) = A(i, j);
-    }
+    #pragma omp parallel for
+    for (size_t j = 0; j < dimA; j++)
+      _syspermute_worker(numdims, cdims, cperm, i, j, iperm, jperm, A, result);
+  delete[] cdims;
+  delete[] cperm;
+
   return result;
 }
 
+void _syspermute_worker(const size_t numdims, const size_t *cdims, const size_t *cperm, const size_t i, const size_t j, size_t &iperm, size_t &jperm, const types::cmat &A, types::cmat &result) {
+  size_t *midxrow = new size_t[numdims];
+	size_t *midxcol = new size_t[numdims];
+	size_t *midxrowtmp = new size_t[numdims];
+	size_t *midxcoltmp = new size_t[numdims];
+	size_t *permdims = new size_t[numdims];
+
+  for (size_t i = 0; i < numdims; i++)
+    permdims[i] = cdims[cperm[i]];
+
+  _n2multiidx(i, numdims, cdims, midxrow);
+  _n2multiidx(j, numdims, cdims, midxcol);
+
+  for (size_t k = 0; k < numdims; k++) {
+    midxrowtmp[k] = midxrow[cperm[k]];
+		midxcoltmp[k] = midxcol[cperm[k]];
+  }
+
+  iperm = _multiidx2n(midxrowtmp, numdims, permdims);
+  jperm = _multiidx2n(midxcoltmp, numdims, permdims);
+  result(iperm, jperm) = A(i, j);
+
+  delete[] midxrow;
+  delete[] midxcol;
+  delete[] midxrowtmp;
+  delete[] midxcoltmp;
+  delete[] permdims;
+}
+
 // partial trace
-types::cmat ptrace(const types::cmat &A, const std::vector<size_t> &dims, const std::vector<size_t> &subsys) {
+types::cmat ptrace(const types::cmat &A, const std::vector<size_t> &subsys, const std::vector<size_t> &dims) {
   types::cmat result;
   std::vector<size_t> perdims;
   std::vector<size_t> subsyssort = subsys;
@@ -162,10 +212,8 @@ types::cmat ptrace(const types::cmat &A, const std::vector<size_t> &dims, const 
       cnt1++;
     }
   }
-  result = syspermute(A, dims, perm);
-  result = ptrace2(result, sizeAB);
   
-  return result;
+  return ptrace2(syspermute(A, perm, dims), sizeAB);
 }
 
 types::cmat mat_pow(const types::cmat &A, const types::cplx z) {
@@ -234,10 +282,9 @@ types::cmat rand_unitary(const size_t size) {
 
 void disp(const types::cmat &A, std::ostream& os, unsigned int precision, double eps) {
   if (A.rows() * A.cols() == 0) {
-    os << "Empty ["<< A.rows() << " x " << A.cols() << "] matrix." << std::endl;
+    os << "empty [" << A.rows() << " x " << A.cols() << "] matrix" << std::endl;
     return;
   }
-
   std::ostringstream ostr;
   std::vector<std::string> vstr;
   std::string strtmp;
@@ -247,7 +294,6 @@ void disp(const types::cmat &A, std::ostream& os, unsigned int precision, double
       strtmp.clear();
       ostr.clear();
       ostr.str(std::string());
-
       double re = static_cast<types::cplx>(A(i, j)).real();
       double im = static_cast<types::cplx>(A(i, j)).imag();
 
@@ -255,8 +301,6 @@ void disp(const types::cmat &A, std::ostream& os, unsigned int precision, double
         vstr.push_back("0 ");
       } else if (std::abs(re) < eps) {
         ostr << std::setprecision(precision) << std::fixed << im;
-      } else if (std::abs(im) < eps) {
-        ostr << std::setprecision(precision) << std::fixed << re;
         vstr.push_back(ostr.str() + "i");
       } else if (std::abs(im) < eps) {
         ostr << std::setprecision(precision) << std::fixed << re;
@@ -264,7 +308,6 @@ void disp(const types::cmat &A, std::ostream& os, unsigned int precision, double
       } else {
         ostr << std::setprecision(precision) << std::fixed << re;
         strtmp = ostr.str();
-
         strtmp += (im > 0 ? " + " : " - ");
         ostr.clear();
         ostr.str(std::string());
@@ -276,22 +319,36 @@ void disp(const types::cmat &A, std::ostream& os, unsigned int precision, double
     }
   }
 
-  // determine the maxium length of the entries in each column
   std::vector<size_t> maxlengthcols(A.cols(), 0);
-  
   for (int i = 0; i < A.rows(); i++)
     for (int j = 0; j < A.cols(); j++)
       if (vstr[i * A.cols() + j].size() > maxlengthcols[j])
         maxlengthcols[j] = vstr[i * A.cols() + j].size();
 
   for (int i = 0; i < A.rows(); i++) {
-    // display first column
-    os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right << vstr[i * A.cols()];
-    for (int j = 1; j < A.cols(); j++)
+    os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right;
+    for (int j = 0; j < A.cols(); j++)
       os << std::setw(static_cast<int>(maxlengthcols[j] + 2)) << std::right << vstr[i * A.cols() + j];
-    os << std::endl;
+    if (i < A.rows() - 1)
+      os << std::endl;
   }
 }
+
+void disp(const types::cvect &v, std::ostream& os, unsigned int precision, double eps) {
+  for (size_t i = 0; i < static_cast<size_t>(v.size() - 1); i++) {
+    disp(v(i), os, precision, eps);
+    std::cout<<" ";
+  };
+  disp(v(v.size() - 1), os, precision, eps);
+}
+
+
+void disp(const types::cplx &c, std::ostream& os, unsigned int precision, double eps) {
+  types::cmat tmp(1, 1);
+  tmp(0, 0) = c;
+  disp(tmp, os, precision, eps);
+}
+
 
 // save matrix in text file
 void save_text(const types::cmat & A, const std::string& fname, size_t precision) {
@@ -309,24 +366,6 @@ void save_text(const types::cmat & A, const std::string& fname, size_t precision
     fout << std::endl;
   }
   fout.close();
-}
-
-// load matrix from text file
-types::cmat load_text(const std::string& fname) {
-  std::ifstream fin(fname.c_str());
-  if (!fin.is_open()) {
-    throw std::runtime_error("error opening input file \"" + fname  + "\"!");
-  }
-  size_t rows, cols;
-
-  fin >> rows;
-  fin >> cols;
-  types::cmat A(rows, cols);
-  for (size_t i = 0; i < rows; i++)
-    for (size_t j = 0; j < cols; j++)
-      fin >> A(i, j);
-  fin.close();
-  return A;
 }
 
 // save matrix to a binary file in double precision

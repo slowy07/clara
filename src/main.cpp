@@ -9,18 +9,42 @@ using namespace std;
 using namespace clara;
 using namespace clara::types;
 
-int main() {
+int main(int /*argc*/, char **/*argv*/) {
   _init();
 
-  vector<size_t> dims={2, 3, 4, 5, 6, 7};
-  vector<size_t> subsys={1, 2, 4};
-  size_t dim = 5040;
+  size_t n = 3;
+  size_t nout = n - 1;
   
-  size_t cnt = 0;
-  cmat A(dim, dim);
-  for (size_t i = 0; i<dim; i++)
-    for (size_t j = 0; j<dim; j++)
-      A(i, j) = cnt++;
-  disp(ptrace(A, dims, subsys));
-  cout<<endl<<norm(ptrace(A, dims, subsys)) << endl;
+  size_t dim = pow(2, n);
+
+  ivect dims(n, 2);
+
+  ivect subsys(nout);
+	for (size_t i = 0; i < nout; i++) {
+		subsys(i)=i;
+  }
+
+  ivect perm(n - 1);
+  for(size_t i = 1; i < n; i++)
+    perm(i - 1) = i;
+  perm(n - 1) = 0;
+
+
+  cmat A = randn(dim);
+
+  cvect v(3);
+  v<<ct::ii,2,3;
+  disp(v);
+  cout<<endl<<endl;
+  cout<<v<<endl<<endl;
+
+  ivect a(2);
+  a<<1,2;
+
+  cmat c = randn(3);
+  disp(mat_pow(c, 1));
+  cout<<endl<<endl;
+  disp(static_cast<cmat>(transpose(v) * v));
+  
+  // cplx vv=trace(c);
 }
