@@ -20,7 +20,7 @@ CFLAGS_DEBUG = -DDEBUG -g3 # Debug flags
 LDFLAGS = -lgomp
 
 SOURCES = $(wildcard $(SRC)/*.cpp)
-OBJECTS = $(filter-out clara.o, $(SOURCES:.cpp=.o))
+OBJECTS = $(SOURCES:.cpp=.o)
 
 all: release
 
