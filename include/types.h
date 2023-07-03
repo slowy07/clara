@@ -8,23 +8,14 @@ namespace clara {
 namespace types {
 typedef std::complex<double> cplx;
 
-typedef Eigen::Matrix2cd cmat2;
-typedef Eigen::Matrix3cd cmat3;
-typedef Eigen::Matrix4cd cmat4;
+// complex matrix
 typedef Eigen::MatrixXcd cmat;
 
-typedef Eigen::Vector2cd ket2;
-typedef Eigen::Vector3cd ket3;
-typedef Eigen::Vector4cd ket4;
-typedef Eigen::VectorXcd ket;
+// double matrix
+typedef Eigen::MatrixXd dmat;
 
-typedef Eigen::RowVector2cd bra2;
-typedef Eigen::RowVector3cd bra3;
-typedef Eigen::RowVector4cd bra4;
-typedef Eigen::RowVectorXcd bra;
-
-typedef Eigen::VectorXcd cvect;
-typedef Eigen::VectorXi ivect;
+// integer Matrix
+typedef Eigen::MatrixXi imat;
 
 }
 }

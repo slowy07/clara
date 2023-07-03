@@ -4,47 +4,63 @@
 #include <stdexcept>
 
 #include "../include/clara.h"
+#include "../include/internal.h"
 
 using namespace std;
 using namespace clara;
 using namespace clara::types;
 
-int main(int /*argc*/, char **/*argv*/) {
+int main() {
   _init();
-
-  size_t n = 3;
-  size_t nout = n - 1;
+  // Eigen::MatrixXd _a = Eigen::MatrixXd::Random(4, 4);
+  // save(_a, "../clara/_a");
+  //
+  // Eigen::MatrixXd a = load<Eigen::MatrixXd>("../clara/_a");
+  // std::vector<size_t> subsys = {2, 2};
+  // std::vector<size_t> perm = {1, 0};
+  //
+  // cout << "error in norm difference load/save" << norm(_a - a) << endl;
+  // 
+  // disp(ptrace2(a, {2, 2}));
+  // cout<<endl<<endl;
+  // disp(ptrace(a, {0}, {2, 2}));
+  // cout <<endl<<endl;
   
-  size_t dim = pow(2, n);
+  imat kt(3, 1);
+  kt << 0, 0, 1;
 
-  ivect dims(n, 2);
-
-  ivect subsys(nout);
-	for (size_t i = 0; i < nout; i++) {
-		subsys(i)=i;
-  }
-
-  ivect perm(n - 1);
-  for(size_t i = 1; i < n; i++)
-    perm(i - 1) = i;
-  perm(n - 1) = 0;
-
-
-  cmat A = randn(dim);
-
-  cvect v(3);
-  v<<ct::ii,2,3;
-  disp(v);
-  cout<<endl<<endl;
-  cout<<v<<endl<<endl;
-
-  ivect a(2);
-  a<<1,2;
-
-  cmat c = randn(3);
-  disp(mat_pow(c, 1));
-  cout<<endl<<endl;
-  disp(static_cast<cmat>(transpose(v) * v));
+  imat bt(1, 3);
+  bt << 0, 1, 0;
   
-  // cplx vv=trace(c);
+  disp(kron(kt, bt).template cast<double>());
+  cout <<endl<<endl;
+
+  disp(bt * kt);
+  cout<<endl<<endl;
+  
+  size_t dim = 10;
+  cout << "generate random unitary" << endl;
+  cmat u = rand_unitary(dim);
+  cout << "done generating random unitary";
+  disp(u);
+  cout<<endl;
+  double normdiff = norm((cmat) (u * adjoint(u) - cmat::Identity(dim, dim)));
+  cout << "norm difference" << normdiff << endl;
+  disp(normdiff, std::cout, 18);
+  if (normdiff > std::numeric_limits<double>::epsilon())
+    cout << "yes";
+  else
+    cout << "no";
+  cout << endl << endl;
+  cout <<"the eigen values of are: "<<endl;
+  disp(transpose(evals(u)));
+  cout << endl << endl;
+  
+  cout << "the absolute values of the eigen of are: " << endl;
+  disp(abs(transpose(evals(u))));
+  cout<<endl<<endl;
+
+  imat im(2, 2);
+  im << 1, 2, 3, 4;
+  disp(funm(adjoint(im) *im, [](const cplx x) -> cplx {return std::sqrt(x);}));
 }
