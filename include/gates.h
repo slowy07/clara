@@ -92,10 +92,12 @@ inline Eigen::MatrixXcd Zd(size_t D) {
 
 inline Eigen::MatrixXcd Fd(size_t D) {
   Eigen::MatrixXcd result(D, D);
-  result = Eigen::MatrixXcd::Zero(D, D);
-  for (size_t i = 0; i < D; i++)
+  result.setZero();
+  double sqrtD = std::sqrt(static_cast<double>(D));
+  for (size_t i = 0; i < D; i++) {
     for (size_t j = 0; j < D; j++)
-      result(i, j) = 1 / sqrt(D) * pow(ct::omega(D), i * j);
+      result(i, j) = 1.0 / sqrtD * std::pow(ct::omega(D), static_cast<double>(i * j));
+  }
   return result;
 }
 

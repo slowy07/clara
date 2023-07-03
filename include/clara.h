@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "gates.h"
 #include "stat.h"
+#include "functional.h"
 
 namespace clara {
 int _init();

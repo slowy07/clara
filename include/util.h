@@ -147,29 +147,6 @@ Derived mpower(const Eigen::MatrixBase<Derived> &A, const size_t n) {
   return result;
 }
 
-/**
- * matrix functional calculus
- *  f(A), where (*f) is the function pointer
- */
-template<typename Derived>
-Eigen::MatrixXcd funm(const Eigen::MatrixBase<Derived> &A, types::cplx (*f)(const types::cplx)) {
-  // check square matrix
-  if (!internal::_check_square_mat(A))
-    throw std::runtime_error("ERROR: matrix must be square");
-  Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(A.template cast<types::cplx>());
-  Eigen::MatrixXcd evects = es.eigenvectors();
-  Eigen::MatrixXcd evals = es.eigenvalues();
-  for (int i = 0; i < evals.rows(); i++)
-    evals(i) = (*f)(evals(i));
-  Eigen::MatrixXcd evalsdiag = evals.asDiagonal();
-  return evects * evalsdiag * evects.inverse();
-}
-
-// matrix exponential
-template<typename Derived>
-Eigen::MatrixXcd expm(const Eigen::MatrixBase<Derived> &A) {
-  return funm(A, std::exp);
-}
 
 // random double matrix with entries in normal
 inline Eigen::MatrixXd randn(const size_t rows, const size_t cols) {
@@ -208,7 +185,7 @@ Derived reshape(const Eigen::MatrixBase<Derived>& A, size_t rows, size_t cols) {
 
   if (rowsA * colsA != rows * cols)
     throw std::runtime_error("ERROR: dimension mismatch");
-  return Eigen::Map<Derived>(static_cast<Derived>(A).data(), rows, cols);
+  return Eigen::Map<const Derived>(A.data(), rows, cols);
 }
 
 // permutes the subsystem in a matrix
