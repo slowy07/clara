@@ -40,7 +40,7 @@ int main() {
   disp(kron(bt, kt));
   cout << endl << endl;
 
-  size_t dim = 10;
+  size_t dim = 8;
   cout << "generate random unitary" << endl;
   cmat u = rand_unitary(dim);
   cout << "done generating random unitary" << endl;

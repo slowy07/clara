@@ -2,42 +2,116 @@
 #define UTIL_H_
 
 #include <eigen3/Eigen/QR>
-#include <vector>
-#include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "types.h"
+#include <iostream>
+#include <vector>
+
 #include "constants.h"
 #include "internal.h"
 #include "stat.h"
+#include "types.h"
 
 namespace clara {
 
+// display an Eigen::MatrixX in friendly form
+template <typename Derived>
+void disp(const Eigen::MatrixBase<Derived> &A, std::ostream &os = std::cout,
+          unsigned int precision = 4) {
+  os << std::setprecision(precision) << std::fixed << A;
+}
 
-template<typename Derived>
-Derived transpose(const Eigen::MatrixBase<Derived>& A) {
+template <>
+inline void disp(const Eigen::MatrixBase<Eigen::MatrixXcd> &A, std::ostream &os,
+                 unsigned int precision) {
+  if (A.rows() * A.cols() == 0) {
+    os << "Empty [" << A.rows() << " x " << A.cols() << "] matrix";
+    os << std::endl;
+    return;
+  };
+
+  // if smaller displayed in 0
+  double eps = std::numeric_limits<double>::epsilon();
+  std::ostringstream ostr;
+  std::vector<std::string> vstr;
+  std::string strtmp;
+
+  for (int i = 0; i < A.rows(); i++) {
+    for (int j = 0; j < A.cols(); j++) {
+      strtmp.clear();
+      ostr.clear();
+      ostr.str(std::string());
+      double re = static_cast<types::cplx>(A(i, j)).real();
+      double im = static_cast<types::cplx>(A(i, j)).imag();
+
+      if (std::abs(re) < eps && std::abs(im) < eps) {
+        vstr.push_back("0 ");
+      } else if (std::abs(re) < eps) {
+        ostr << std::setprecision(precision) << std::fixed << im;
+        vstr.push_back(ostr.str() + "i");
+      } else if (std::abs(im) < eps) {
+        ostr << std::setprecision(precision) << std::fixed << re;
+        vstr.push_back(ostr.str() + " ");
+      } else {
+        ostr << std::setprecision(precision) << std::fixed << re;
+        strtmp = ostr.str();
+        strtmp += (im > 0 ? " + " : " - ");
+        ostr.str(std::string());
+        ostr << std::setprecision(precision) << std::fixed << std::abs(im);
+        strtmp += ostr.str();
+        strtmp += "i";
+        vstr.push_back(strtmp);
+      }
+    }
+  }
+  // determine the maximum length of the entries in each column
+  std::vector<size_t> maxlengthcols(A.cols(), 0);
+  for (int i = 0; i < A.rows(); i++)
+    for (int j = 0; j < A.cols(); j++)
+      if (vstr[i * A.cols() + j].size() > maxlengthcols[j])
+        maxlengthcols[j] = vstr[i * A.cols() + j].size();
+
+  for (int i = 0; i < A.rows(); i++) {
+    os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right << vstr[i * A.cols()];
+    for (int j = 1; j < A.cols(); j++)
+      os << std::setw(static_cast<int>(maxlengthcols[j] + 2)) << std::right
+         << vstr[i * A.cols() + j];
+    if (i < A.rows() - 1)
+      os << std::endl;
+  }
+}
+
+// display a complex number in friendly form
+inline void disp(const types::cplx c, std::ostream &os = std::cout, unsigned int precision = 4) {
+  Eigen::MatrixXcd tmp(1, 1);
+  tmp(0, 0) = c;
+  disp(tmp, os, precision);
+}
+
+template <typename Derived>
+Derived transpose(const Eigen::MatrixBase<Derived> &A) {
   return A.transpose();
 }
 
-template<typename Derived>
-Derived conjugate(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+Derived conjugate(const Eigen::MatrixBase<Derived> &A) {
   return A.conjugate();
 }
 
-template<typename Derived>
-Derived adjoint(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+Derived adjoint(const Eigen::MatrixBase<Derived> &A) {
   return A.adjoint();
 }
 
 // trace, perserve return type
-template<typename Derived>
-typename Derived::Scalar trace(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+typename Derived::Scalar trace(const Eigen::MatrixBase<Derived> &A) {
   return A.trace();
 }
 
 // absolute values component-wise, return double
-template<typename Derived>
-Derived abs(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+Derived abs(const Eigen::MatrixBase<Derived> &A) {
   Derived result = Derived::Zero(A.rows(), A.cols());
   for (typename Derived::Index i = 0; i < A.rows(); i++)
     for (typename Derived::Index j = 0; j < A.cols(); j++)
@@ -46,33 +120,33 @@ Derived abs(const Eigen::MatrixBase<Derived>& A) {
 }
 
 // trace-norm
-template<typename Derived>
-typename Eigen::MatrixXd::Scalar norm(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+typename Eigen::MatrixXd::Scalar norm(const Eigen::MatrixBase<Derived> &A) {
   // convert matrix to complex then return its norm
   return (A.template cast<types::cplx>()).norm();
 }
 
 // eigenvalues
-template<typename Derived>
-Eigen::MatrixXcd evals(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+Eigen::MatrixXcd evals(const Eigen::MatrixBase<Derived> &A) {
   return (A.template cast<types::cplx>()).eigenvalues();
 }
 
 // eigenvectors
-template<typename Derived>
-Eigen::MatrixXcd evects(const Eigen::MatrixBase<Derived>& A) {
+template <typename Derived>
+Eigen::MatrixXcd evects(const Eigen::MatrixBase<Derived> &A) {
   Eigen::ComplexEigenSolver<Eigen::MatrixXcd> es(A.template cast<types::cplx>());
   return es.eigenvectors();
 }
 
 // kronecker product
-template<typename Derived>
+template <typename Derived>
 Derived kron(const Eigen::MatrixBase<Derived> &A, const Eigen::MatrixBase<Derived> &B) {
   int Acols = A.cols();
   int Arows = A.rows();
   int Bcols = B.cols();
   int Brows = B.rows();
-  
+
   Derived result;
   result.resize(Arows * Brows, Acols * Bcols);
 
@@ -87,7 +161,7 @@ Derived kron(const Eigen::MatrixBase<Derived> &A, const Eigen::MatrixBase<Derive
  * <Derived> is force to be a mterix by invocation of kron inside
  * the function
  */
-template<typename Derived>
+template <typename Derived>
 Derived kron_list(const std::vector<Derived> &list) {
   Derived result = list[0];
   for (size_t i = 1; i < list.size(); i++)
@@ -99,7 +173,7 @@ Derived kron_list(const std::vector<Derived> &list) {
  * kronecker product of matrix with itself of $n$ times, preserve
  * return type
  */
-template<typename Derived>
+template <typename Derived>
 Derived kron_pow(const Eigen::MatrixBase<Derived> &A, size_t n) {
   std::vector<Derived> list;
   for (size_t i = 0; i < n; i++)
@@ -108,7 +182,7 @@ Derived kron_pow(const Eigen::MatrixBase<Derived> &A, size_t n) {
 }
 
 // matrix power A^z
-template<typename Derived>
+template <typename Derived>
 Eigen::MatrixXcd mpower(const Eigen::MatrixBase<Derived> &A, const types::cplx z) {
   // check square matrix
   if (!internal::_check_square_mat(A))
@@ -134,7 +208,7 @@ Eigen::MatrixXcd mpower(const Eigen::MatrixBase<Derived> &A, const types::cplx z
  * itneger matrix power, preserve return type
  * explictly multiply the matrix with itself
  */
-template<typename Derived>
+template <typename Derived>
 Derived mpower(const Eigen::MatrixBase<Derived> &A, const size_t n) {
   // check square matrix
   if (!internal::_check_square_mat(A))
@@ -147,6 +221,13 @@ Derived mpower(const Eigen::MatrixBase<Derived> &A, const size_t n) {
   return result;
 }
 
+// random double matrix with entries in uniform
+inline Eigen::MatrixXd rand(const size_t rows, const size_t cols) {
+  return Eigen::MatrixXd::Random(rows, cols);
+}
+
+// random double square matrix with entries in uniform
+inline Eigen::MatrixXd rand(const size_t rows) { return rand(rows, rows); }
 
 // random double matrix with entries in normal
 inline Eigen::MatrixXd randn(const size_t rows, const size_t cols) {
@@ -159,18 +240,21 @@ inline Eigen::MatrixXd randn(const size_t rows, const size_t cols) {
 }
 
 // random square matrix with entries in nornal
-inline Eigen::MatrixXd randn(const size_t rows) {
-  return randn(rows, rows);
-}
+inline Eigen::MatrixXd randn(const size_t rows) { return randn(rows, rows); }
 
 // random unitary matrix
 inline Eigen::MatrixXcd rand_unitary(const size_t size) {
   Eigen::MatrixXcd x(size, size);
-  
+
   x.real() = 1. / sqrt(2) * randn(size);
   x.imag() = 1. / sqrt(2) * randn(size);
   Eigen::HouseholderQR<Eigen::MatrixXcd> qr(x);
   Eigen::MatrixXcd Q = qr.householderQ();
+
+  Eigen::VectorXcd phases = (rand(size, 1)).template cast<types::cplx>();
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(phases.rows()); i++)
+    phases(i) = std::exp(2 * ct::pi * ct::ii * phases(i));
+  Q = Q * phases.asDiagonal();
   return Q;
 }
 
@@ -178,8 +262,8 @@ inline Eigen::MatrixXcd rand_unitary(const size_t size) {
  * reshape the columns of A and returns a matrix with m rows and n columns
  * ise column major order
  */
-template<typename Derived>
-Derived reshape(const Eigen::MatrixBase<Derived>& A, size_t rows, size_t cols) {
+template <typename Derived>
+Derived reshape(const Eigen::MatrixBase<Derived> &A, size_t rows, size_t cols) {
   size_t rowsA = A.rows();
   size_t colsA = A.cols();
 
@@ -189,8 +273,9 @@ Derived reshape(const Eigen::MatrixBase<Derived>& A, size_t rows, size_t cols) {
 }
 
 // permutes the subsystem in a matrix
-template<typename Derived>
-Derived syspermute(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> perm, const std::vector<size_t> &dims)  {
+template <typename Derived>
+Derived syspermute(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> perm,
+                   const std::vector<size_t> &dims) {
   // check square matrix
   if (!internal::_check_square_mat(A))
     throw std::runtime_error("ERROR: syspermute matrix must be square");
@@ -215,7 +300,7 @@ Derived syspermute(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t
   size_t iperm = 0;
   size_t jperm = 0;
   for (size_t i = 0; i < dim; i++)
-  #pragma omp parallel for
+#pragma omp parallel for
     for (size_t j = 0; j < dim; j++)
       internal::_syspermute_worker(numdims, cdims, cperm, i, j, iperm, jperm, A, result);
   delete[] cdims;
@@ -224,7 +309,7 @@ Derived syspermute(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t
 }
 
 // partial trace over subsystem B in a D_A x D_B system
-template<typename Derived>
+template <typename Derived>
 Derived ptrace2(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> dims) {
   // check square matrix
   if (!internal::_check_square_mat(A))
@@ -239,20 +324,19 @@ Derived ptrace2(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> d
   size_t DA = dims[0];
   size_t DB = dims[1];
   Derived result = Derived::Zero(DA, DA);
-  
+
   for (size_t i = 0; i < DA; i++)
-  #pragma omp parallel for
+#pragma omp parallel for
     for (size_t j = 0; j < DA; j++) {
-      result(i, j) = trace(
-        static_cast<Derived>(A.block(i * DB, j * DB, DB, DB))
-      );
+      result(i, j) = trace(static_cast<Derived>(A.block(i * DB, j * DB, DB, DB)));
     }
   return result;
 }
 
 // partial trace
-template<typename Derived>
-Derived ptrace(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &subsys, const std::vector<size_t> &dims) {
+template <typename Derived>
+Derived ptrace(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &subsys,
+               const std::vector<size_t> &dims) {
   // check square matrix
   if (!internal::_check_square_mat(A))
     throw std::runtime_error("ERROR: ptrace matrix must be a square");
@@ -261,14 +345,15 @@ Derived ptrace(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &s
     throw std::runtime_error("ERROR: ptrace invalid dimension vector");
   // check that dims match dimension of A
   if (!internal::_check_dims_match_mat(dims, A))
-    throw std::runtime_error("ERROR: ptrace dimension vector does not match the dimension of the matrix");
+    throw std::runtime_error(
+        "ERROR: ptrace dimension vector does not match the dimension of the matrix");
   if (!internal::_check_subsys(subsys, dims))
     throw std::runtime_error("ERROR: ptrace invalid subsystem");
 
   size_t dim = static_cast<size_t>(A.rows());
-   // number of subsystems trace out
+  // number of subsystems trace out
   size_t numsubsys = subsys.size();
-   // total number of subsystems
+  // total number of subsystems
   size_t numdims = dims.size();
   // the permutation vector
   std::vector<size_t> perm(numdims, 0);
@@ -276,14 +361,14 @@ Derived ptrace(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &s
   std::vector<size_t> permdims;
 
   Derived result;
-  
+
   // the total dimension of the taced-out subsystem
   size_t dimsubsys = 1;
   for (size_t i = 0; i < numsubsys; i++)
     dimsubsys *= dims[subsys[i]];
   std::vector<size_t> sizeAB;
-	sizeAB.push_back(dim / dimsubsys);
-	sizeAB.push_back(dimsubsys);
+  sizeAB.push_back(dim / dimsubsys);
+  sizeAB.push_back(dimsubsys);
 
   // construct the permutation that bring the traced out to the end
   size_t cnt0 = 0;
@@ -302,8 +387,9 @@ Derived ptrace(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &s
 }
 
 // partial transpose
-template<typename Derived>
-Derived ptranspose(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t>& subsys, const std::vector<size_t>& dims) {
+template <typename Derived>
+Derived ptranspose(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t> &subsys,
+                   const std::vector<size_t> &dims) {
   // check the square matrix
   if (!internal::_check_square_mat(A))
     throw std::runtime_error("ERROR: ptranspose matrix must be square");
@@ -312,7 +398,8 @@ Derived ptranspose(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t
     throw std::runtime_error("ERROR: ptranspose invalid dimension vector");
   // check that dims match the dimension of A
   if (!internal::_check_dims_match_mat(dims, A))
-    throw std::runtime_error("ERROR: ptranspose dimension vectore does not match the dimension of the matrix");
+    throw std::runtime_error(
+        "ERROR: ptranspose dimension vectore does not match the dimension of the matrix");
   if (!internal::_check_subsys(subsys, dims))
     throw std::runtime_error("ERROR: ptranspose invalid subsystem");
 
@@ -320,8 +407,8 @@ Derived ptranspose(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t
   const size_t numdims = dims.size();
   const size_t numsubsys = subsys.size();
   size_t *cdims = new size_t[numdims];
-	size_t *midxrow = new size_t[numdims];
-	size_t *csubsys = new size_t[numsubsys];
+  size_t *midxrow = new size_t[numdims];
+  size_t *csubsys = new size_t[numsubsys];
 
   Derived result = A;
 
@@ -337,62 +424,47 @@ Derived ptranspose(const Eigen::MatrixBase<Derived> &A, const std::vector<size_t
     internal::_n2multiidx(i, numdims, cdims, midxrow);
 #pragma omp parallel for
     for (size_t j = 0; j < dim; j++)
-      internal::_ptranspose_worker(midxrow, numdims, numsubsys, cdims, csubsys, i, j, iperm, jperm, A, result);
+      internal::_ptranspose_worker(midxrow, numdims, numsubsys, cdims, csubsys, i, j, iperm, jperm,
+                                   A, result);
   }
-  
+
   delete[] midxrow;
   delete[] cdims;
   delete[] csubsys;
   return result;
 }
 
-// random matrix with entries in uniform
-template<typename Derived>
-Derived rand(const size_t rows, const size_t cols) {
-  return Derived::Random(rows, cols);
-}
-
-// random square matrix with entries in uniform
-template<typename Derived>
-Derived rand(const size_t rows) {
-  return rand<Derived>(rows, rows);
-}
-
 // save matrix to a binary file in double precision
-template<typename Derived>
-void save(const Eigen::MatrixBase<Derived> & A, const std::string& fname) {
+template <typename Derived>
+void save(const Eigen::MatrixBase<Derived> &A, const std::string &fname) {
   std::fstream fout;
   fout.open(fname.c_str(), std::ios::out | std::ios::binary);
   if (fout.fail()) {
-    throw std::runtime_error(
-      "ERROR: writting output file \"" + std::string(fname) + "\" error!"
-    );
+    throw std::runtime_error("ERROR: writting output file \"" + std::string(fname) + "\" error!");
 
     // write header to file
     const char _header[] = "TYPE::Eigen::Matrix";
     fout.write(_header, sizeof(_header));
-    
+
     size_t rows = A.cols();
     size_t cols = A.cols();
-    fout.write((char*) &rows, sizeof(rows));
-    fout.write((char*) &cols, sizeof(cols));
+    fout.write((char *)&rows, sizeof(rows));
+    fout.write((char *)&cols, sizeof(cols));
     for (size_t i = 0; i < rows; i++)
       for (size_t j = 0; j < cols; j++)
-        fout.write((char*) &A(i, j), sizeof(A(i, j)));
+        fout.write((char *)&A(i, j), sizeof(A(i, j)));
     fout.close();
   }
 }
 
 // load matrix from binary
-template<typename Derived>
-Derived load(const std::string& fname) {
+template <typename Derived>
+Derived load(const std::string &fname) {
   std::fstream fin;
   fin.open(fname.c_str(), std::ios::in | std::ios::binary);
 
   if (fin.fail()) {
-    throw std::runtime_error(
-      "ERROR: opening input file \"" + std::string(fname) + "\" error!"
-    );
+    throw std::runtime_error("ERROR: opening input file \"" + std::string(fname) + "\" error!");
 
     // write header to file
     const char _header[] = "TYPE::Eigen::Matrix";
@@ -403,98 +475,23 @@ Derived load(const std::string& fname) {
     fin.read(_fheader, sizeof(_fheader));
     if (strcmp(_fheader, _header)) {
       delete[] _fheader;
-      throw std::runtime_error(
-        "ERROR: load input file \"" + std::string(fname) + "\" is corrupted!"
-      );
+      throw std::runtime_error("ERROR: load input file \"" + std::string(fname) +
+                               "\" is corrupted!");
     }
     delete[] _fheader;
 
     size_t rows, cols;
-    fin.read((char*) &rows, sizeof(rows));
-    fin.read((char*) &cols, sizeof(cols));
-    
+    fin.read((char *)&rows, sizeof(rows));
+    fin.read((char *)&cols, sizeof(cols));
+
     Derived A(rows, cols);
     for (size_t i = 0; i < rows; i++)
       for (size_t j = 0; j < cols; j++)
-        fin.read((char*) &A(i, j), sizeof(A(i, j)));
+        fin.read((char *)&A(i, j), sizeof(A(i, j)));
     fin.close();
     return A;
   }
 }
 
-// display a an Eigen::MatrixX in friendly form
-template<typename Derived>
-void disp(const Eigen::MatrixBase<Derived> &A, std::ostream& os = std::cout, unsigned int precision = 4) {
-  std::cout << "typeid: " << typeid(Derived).name() << std::endl;
-  os << std::setprecision(precision) << std::fixed << A;
-}
-
-template<>
-inline void disp(const Eigen::MatrixBase<Eigen::MatrixXcd> &A, std::ostream& os, unsigned int precision) {
-  if (A.rows() * A.cols() == 0) {
-    os << "empty [" << A.rows() <<  " x " << A.cols() << "] matrixx";
-    os << std::endl;
-    return;
-  };
-  // everything smaller than eps is displayed as 0
-  double eps = std::numeric_limits<double>::epsilon();
-  std::ostringstream ostr;
-  std::vector<std::string> vstr;
-  std::string strtmp;
-
-  for (int i = 0; i < A.rows(); i++) {
-    for (int j = 0; j < A.cols(); j++) {
-      strtmp.clear();
-      ostr.clear();
-      ostr.str(std::string());
-      
-      double re = static_cast<types::cplx>(A(i, j)).real();
-      double im = static_cast<types::cplx>(A(i, j)).imag();
-
-      if (std::abs(re) < eps && std::abs(im) < eps) {
-        vstr.push_back("0 ");
-      } else if (std::abs(re) < eps) {
-        ostr << std::setprecision(precision) << std::fixed << im;
-        vstr.push_back(ostr.str() + "i");
-      } else if (std::abs(im) < eps) {
-        ostr << std::setprecision(precision) << std::fixed << re;
-        vstr.push_back(ostr.str() + " ");
-      } else {
-        ostr << std::setprecision(precision) << std::fixed << re;
-        strtmp = ostr.str();
-        strtmp += (im > 0 ? " + " : " - ");
-        ostr.clear();
-        ostr.str(std::string());
-        ostr << std::setprecision(precision) << std::fixed << std::abs(im);
-        strtmp += ostr.str();
-        strtmp += "i";
-        vstr.push_back(strtmp);
-      }
-    }
-  }
-  // determine the maximum length of the entries in each column
-  std::vector<size_t> maxlengthcols(A.cols(), 0);
-  for (int i = 0; i < A.rows(); i++)
-    for (int j = 0; j < A.cols(); j++)
-      if (vstr[i * A.cols() + j].size() > maxlengthcols[j])
-        maxlengthcols[j] = vstr[i * A.cols() + j].size();
-  
-  // display
-  for (int i = 0; i < A.rows(); i++) {
-    os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right << vstr[i * A.cols()];
-    for (int j = 1; j < A.cols(); j++)
-      os << std::setw(static_cast<int>(maxlengthcols[j] + 2)) << std::right << vstr[i * A.cols() + j];
-    if (i < A.rows() - 1)
-      os << std::endl;
-  }
-}
-
-// display complex number in friendly form
-inline void disp(const types::cplx c, std::ostream& os = std::cout, unsigned int precision = 4) {
-  Eigen::MatrixXcd tmp(1, 1);
-  tmp(0, 0) = c;
-  disp(tmp, os, precision);
-}
-
-}
-#endif // UTIL_H_
+}  // namespace clara
+#endif  // UTIL_H_
