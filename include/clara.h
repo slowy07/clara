@@ -7,6 +7,9 @@
 #include "gates.h"
 #include "stat.h"
 #include "functional.h"
+#include "random.h"
+#include "entropy.h"
+#include "io.h"
 
 namespace clara {
 int _init();
