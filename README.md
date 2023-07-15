@@ -32,6 +32,8 @@ repository: [gitlab](https://gitlab.com/libeigen/eigen)
     ```
     brew install eigen
     ```
+- windows
+    recommended for install [Cygwin](https://www.cygwin.com/) with [CMake](http://www.cmake.org/) and [g++](https://gcc.gnu.org/) 
 
 ## OpenMp
 
@@ -60,3 +62,18 @@ website [openmp.org](https://www.openmp.org/)
 ## Test clara
 
 Clara using [GoogleTest](https://github.com/google/googletest) framework and mocking tools, for installation you can check on [here](https://github.com/google/googletest), or you can just find on the testing script on [``clara_test/run_test``](clara_test/run_test)
+
+## running test clara
+
+```
+g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $HOME/eigen -I $HOME/clara/include testing/channels.cpp -o channels
+```
+
+information:
+- ``-pedantic`` ensure that the code conforms to the strictest standard of the C++ language
+- ``-std=c++11`` specifies that the code should be compiled using c++11
+- ``-Wall`` enable all warnings
+- ``-Wextra`` enables additional warnings that are not enabled by default
+- ``-Weffc++`` enables warnings about potential erroes in the code
+- ``-fopenmp`` enables ``OpenMP`` support
+- ``-g3`` enable debugging symbol
