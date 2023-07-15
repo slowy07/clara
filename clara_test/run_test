@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+
+echo "isntall eigen"
+sudo apt-get install libeigen3-dev
+
+echo "initailizing google test"
+git clone https://github.com/google/googletest.git -b release-1.11.0
+cd googletest
+mkdir build
+cd build
+cmake ..
+make install
+
+echo "testing clara"
+cd ..
+cd ..
+mkdir build
+cd build
+cmake ..
+make
+
+echo "\n"
+echo "result from clara test"
+cd build
+cd tests
+./clara_testing
+

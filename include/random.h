@@ -1,51 +1,308 @@
 #ifndef RANDOM_H_
 #define RANDOM_H_
 
-#include "constants.h"
-#include "stat.h"
+#include <algorithm>
+#include <complex>
+#include <cstdlib>
+#include <iterator>
+#include <limits>
+#include <random>
+#include <vector>
+
+#include "classFunction/exception.h"
+#include "classFunction/random_devices.h"
+#include "functions.h"
+#include "input_output.h"
 #include "types.h"
 
 namespace clara {
-// random double matrix with entries in uniform
-inline Eigen::MatrixXd rand(size_t rows, size_t cols) {
-  return Eigen::MatrixXd::Random(rows, cols);
+/**
+ * @brief genrate random real number uniformly distributed in the interval [a, b]
+ * @return random real number (double) uniformly distributed in [a, b]
+ */
+inline double rand(double a, double b) {
+  if (a >= b)
+    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+  std::uniform_real_distribution<> ud(a, b);
+
+#ifdef NO_THREAD_LOCAL_
+  return ud(RandomDevices::get_instance().rng_);
+#else
+  return ud(RandomDevices::get_thread_local_instance().rng_);
+#endif  // DEBUG
 }
 
-// random double square matrix with entries in uniform
-inline Eigen::MatrixXd rand(size_t rows) { return rand(rows, rows); }
-
-// random double matrix with entries in normal
-inline Eigen::MatrixXd randn(size_t rows, size_t cols) {
-  stat::NormalDistribution nd;
-  Eigen::MatrixXd A(rows, cols);
-
-  for (size_t i = 0; i < rows; i++)
-    for (size_t j = 0; j < cols; j++)
-      A(i, j) = nd.sample();
-  return A;
+/**
+ * @brief generate a random big integer uniformly distributed in the interval [a, b]
+ * @return random big integer uniformly distributed in the interval
+ */
+inline bigint rand(bigint a, bigint b) {
+  if (a > b)
+    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+  std::uniform_int_distribution<bigint> uid(a, b);
+#ifdef NO_THREAD_LOCAL_
+  return uid(RandomDevices::get_instance().rng_);
+#else
+  return uid(RandomDevices::get_thread_local_instance().rng_);
+#endif  // DEBUG
 }
 
-// random suare matrix with entries in normal
-inline Eigen::MatrixXd randn(size_t rows) { return randn(rows, rows); }
+/**
+ * @brief generate random index (idx) uniformly distribyted in the interval [a,b]
+ * @return random index uniformly distributed in the interval[a, b]
+ */
+inline idx randidx(idx a = std::numeric_limits<idx>::min(),
+                   idx b = std::numeric_limits<idx>::max()) {
+  if (a < b)
+    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+  std::uniform_int_distribution<idx> uid(a, b);
 
-// random unitary matrix
-inline Eigen::MatrixXcd rand_unitary(size_t size) {
-  Eigen::MatrixXcd X(size, size);
-  X.real() = 1. / sqrt(2) * randn(size);
-  X.imag() = 1. / sqrt(2) * randn(size);
-  Eigen::HouseholderQR<Eigen::MatrixXcd> qr(X);
+#ifdef NO_THREAD_LOCAL_
+  return uid(RandomDevices::get_instance().rng_);
+#else
+  return uid(RandomDevices::get_thread_local_instance().rng_);
+#endif  // DEBUG
+}
 
-  Eigen::MatrixXcd Q = qr.householderQ();
-  /*
-   * phase correction so that the resultation matrix
-   * is uniformly distributed according to haar
-   * measure
-   */
-  Eigen::VectorXcd phases = (rand(size, 1)).template cast<types::cplx>();
-  for (size_t i = 0; i < (size_t)phases.rows(); i++)
-    phases(i) = std::exp((types::cplx)(2 * ct::pi * ct::ii * phases(i)));
+/**
+ * @brief generate a random matrix with entries uniformly distributed
+ * in the interval [a, b]
+ * if complex, then both real and imaginary parts are uniformly distributed
+ * in [a, b]
+ */
+template <typename Derived>
+Derived rand(idx rows, idx cols, double a = 0, double b = 1) {
+  (void)rows;
+  (void)cols;
+  (void)a;
+  (void)b;
+  throw Exception("clara::rand()", Exception::Type::UNDEFINED_TYPE);
+}
+
+/**
+ * @brief generate a random real matrix with entries uniformly
+ * distributed in the interval [a, b], the template parameter cannot
+ * be automatically deduced and must be explicitly provied
+ * @return random real matrix
+ */
+template <>
+inline dmat rand(idx rows, idx cols, double a, double b) {
+  if (rows == 0 || cols == 0)
+    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+  if (a >= b)
+    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+  return dmat::Zero(rows, cols).unaryExpr([a, b](double) { return rand(a, b); });
+}
+
+/**
+ * @brief generate a random complex matrix with entries (both and real and imaginary) uniformly
+ * distributed in the interval [a, b], specialized for complex matrices
+ * the template parameter cannot be automatically deduced and must be explicitly
+ * provided
+ * @return random complex matrix
+ */
+
+template <>
+inline cmat rand(idx rows, idx cols, double a, double b) {
+  if (rows == 0 || cols == 0)
+    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+  if (a >= b)
+    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+
+  return rand<dmat>(rows, cols, a, b).cast<cplx>() +
+         1_i * rand<dmat>(rows, cols, a, b).cast<cplx>();
+}
+
+/**
+ * @brief generate a random matrix with entries normally distributed in N(mean, sigma)
+ * if complex, then both real and imaginary parts are normally distributed in N(mean, sigma)
+ */
+template <typename Derived>
+Derived randn(idx rows, idx cols, double mean = 0, double sigma = 1) {
+  (void)rows;
+  (void)cols;
+  (void)mean;
+  (void)sigma;
+  throw Exception("clara::randn()", Exception::Type::UNDEFINED_TYPE);
+}
+
+/**
+ * @brief generate a random real matrix with entries normally
+ * distributed in N(mean, sigma) specialization for double matrices
+ * this template parameter cannot be automatically deduced and
+ * must be explicitly provied
+ */
+template <>
+inline dmat randn(idx rows, idx cols, double mean, double sigma) {
+  if (rows == 0 || cols == 0)
+    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+  std::normal_distribution<> nd(mean, sigma);
+  return dmat::Zero(rows, cols).unaryExpr([&nd](double) {
+#ifdef NO_THREAD_LOCAL_
+    return nd(RandomDevices::get_instance().rng_);
+#else
+    return nd(RandomDevices::get_thread_local_instance().rng_);
+#endif  // DEBUG
+  });
+}
+
+/**
+ * @brief generate random complex matrix with entries (both real and imaginary)
+ * normally distributer in N(mean, sigma)
+ * @return random complex matrix
+ */
+template <>
+inline cmat randn(idx rows, idx cols, double mean, double sigma) {
+  if (rows == 0 || cols == 0)
+    throw Exception("clara::randn()", Exception::Type::ZERO_SIZE);
+  return randn<dmat>(rows, cols, mean, sigma).cast<cplx>() +
+         1_i * randn<dmat>(rows, cols, mean, sigma).cast<cplx>();
+}
+
+/**
+ * @brief generate random real number (double) normally distributed in N(mean, sigma)
+ * @return random real number normally distributed in N(mean, sigma)
+ */
+inline double randn(double mean = 0, double sigma = 1) {
+  std::normal_distribution<> nd(mean, sigma);
+#ifdef NO_THREAD_LOCAL_
+  return nd(RandomDevices::get_instance().rng_);
+#else
+  return nd(RandomDevices::get_thread_local_instance().rng_);
+#endif  // DEBUG
+}
+
+inline cmat randU(idx D) {
+  if (D == 0)
+    throw Exception("clara::randU()", Exception::Type::DIMS_INVALID);
+
+  cmat X = 1 / std::sqrt(2.) * randn<cmat>(D, D);
+  Eigen::HouseholderQR<cmat> qr(X);
+
+  cmat Q = qr.householderQ();
+  Eigen::VectorXcd phases = (rand<dmat>(D, 1)).cast<cplx>();
+  for (idx i = 0; i < static_cast<idx>(phases.rows()); ++i)
+    phases(i) = std::exp(2 * pi * 1_i * phases(i));
   Q = Q * phases.asDiagonal();
   return Q;
+}
+
+/**
+ * @brief generate random isometry matrix
+ * @return random isometry matrix
+ */
+inline cmat randV(idx Din, idx Dout) {
+  if (Din == 0 || Dout == 0 || Din > Dout)
+    throw Exception("clara::randV()", Exception::Type::DIMS_INVALID);
+  return randU(Dout).block(0, 0, Dout, Din);
+}
+
+/**
+ * @brief generate set random of kraus operator
+ * @return set N kraus operators satisfying the closure condition
+ */
+inline std::vector<cmat> randkraus(idx N, idx D) {
+  if (N == 0)
+    throw Exception("clara::randkraus()", Exception::Type::OUT_OF_RANGE);
+  if (D == 0)
+    throw Exception("clara::randkraus()", Exception::Type::DIMS_INVALID);
+
+  std::vector<cmat> result(N);
+  for (idx i = 0; i < N; ++i)
+    result[i] = cmat::Zero(D, D);
+  cmat Fk(D, D);
+  cmat U = randU(N * D);
+
+#ifdef WITH_OPENMP_
+#pragma omp parallel for collapse(3)
+#endif  // DEBUG
+  for (idx k = 0; k < N; ++k)
+    for (idx a = 0; a < D; ++a)
+      for (idx b = 0; b < D; ++b)
+        result[k](a, b) = U(a * N + k, b * N);
+  return result;
+}
+
+/**
+ * @brief generate a random hermitian matrix
+ * @return random hermitian matrix
+ */
+inline cmat randH(idx D) {
+  if (D == 0)
+    throw Exception("clara::randH()", Exception::Type::DIMS_INVALID);
+  cmat H = 2 * rand<cmat>(D, D) - (1. + 1_i) * cmat::Ones(D, D);
+  return H + adjoint(H);
+}
+
+/**
+ * @brief generate random normalized ket (pure state vector)
+ * @return random normalized ket
+ */
+inline ket randket(idx D) {
+  if (D == 0)
+    throw Exception("clara::randket()", Exception::Type::DIMS_INVALID);
+  ket kt = randn<cmat>(D, 1);
+  return kt / norm(kt);
+}
+
+/**
+ * @brief generate a random density matrix
+ * @return random density matrix
+ */
+inline cmat randrho(idx D) {
+  if (D == 0)
+    throw Exception("clara::randrho()", Exception::Type::DIMS_INVALID);
+  cmat result = 10 * randH(D);
+  result = result * adjoint(result);
+  return result / trace(result);
+}
+
+/**
+ * @brief generate a random uniformly distributed permutation
+ * uses knuth shuffle method (as implemented by std::shuffle)
+ * so that all permutation are equally probable
+ * @return random permutation of size N
+ */
+inline std::vector<idx> randperm(idx N) {
+  if (N == 0)
+    throw Exception("clara::randperm()", Exception::Type::PERM_INVALID);
+  std::vector<idx> result(N);
+
+  // fill increasing oreder
+  std::iota(std::begin(result), std::end(result), 0);
+#ifdef NO_THREAD_LOCAL_
+  std::shuffle(std::begin(result), std::end(result), RandomDevice::get_instance().rng_);
+#else
+  std::shuffle(std::begin(result), std::end(result),
+               RandomDevices::get_thread_local_instance().rng_);
+#endif  // NO_THREAD_LOCAL_
+  return result;
+}
+
+/**
+ * @brief generate random probability vector uniformly distributed over the
+ * probability simplex
+ * @return random probability vector
+ */
+inline std::vector<double> randprob(idx N) {
+  if (N == 0)
+    throw Exception("clara::randprob()", Exception::Type::PERM_INVALID);
+  std::vector<double> result(N);
+
+  // generate
+  std::exponential_distribution<> ed(1);
+  for (idx i = 0; i < N; ++i) {
+#ifdef NO_THREAD_LOCAL_
+    result[i] = ed(clara::RandomDevice::get_instance().rng_);
+#else
+    result[i] = ed(clara::RandomDevices::get_thread_local_instance().rng_);
+#endif  // NO_THREAD_LOCAL_
+  }
+  // normalize
+  double sumprob = sum(result);
+  for (idx i = 0; i < N; ++i)
+    result[i] /= sumprob;
+  return result;
 }
 
 }  // namespace clara

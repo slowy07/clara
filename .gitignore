@@ -29,7 +29,10 @@ cmake_install.cmake
 
 # Ignore any files generated during the build process
 # For example, if you use CMake and build in a directory named 'build':
-/build/
+/build
 
+
+# anything
 clara
+clara_test/googletest/
 

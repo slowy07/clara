@@ -1,24 +1,31 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#include <limits>
+
+#include "classFunction/exception.h"
 #include "types.h"
 
 namespace clara {
-namespace ct {
+inline constexpr cplx operator"" _i(unsigned long long int x) noexcept {
+  return {0., static_cast<double>(x)};
+}
 
-// for setting to zero everything that is smaller in absolute magniteude
-const double chop = 1e-10;
+inline constexpr cplx operator"" _i(long double x) noexcept { return {0., static_cast<double>(x)}; }
+constexpr double chop = 1e-10;
+constexpr double eps = 1e-12;
+constexpr idx maxn = 64;
 
-// imaginary i (square root of -1)
-const types::cplx ii(0, 1);
-// pi notation
-const double pi = 3.141592653589793238462643383279502884;
-// base natural log
-const double ee = 2.718281828459045235360287471352662497;
+constexpr double pi = 3.141592653589793238462643383279502884;
+constexpr double ee = 2.718281828459045235360287471352662497;
+constexpr double inifinity = std::numeric_limits<double>::infinity();
 
-inline types::cplx omega(size_t D) { return exp(2.0 * pi * ii / static_cast<double>(D)); }
+inline cplx omega(idx D) {
+  if (D == 0)
+    throw Exception::Type::OUT_OF_RANGE;
+  return exp(2.0 * pi * 1_i / static_cast<double>(D));
+}
 
-}  // namespace ct
 }  // namespace clara
 
-#endif  // !CONSTANTS_H_
+#endif  // ! CONSTANTS_H_

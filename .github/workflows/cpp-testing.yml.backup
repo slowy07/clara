@@ -12,5 +12,5 @@ jobs:
       - name: testing
         run: |
           make clean
-          make
+          make debug
           ./clara
