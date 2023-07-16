@@ -23,6 +23,6 @@ jobs:
 
       - name: Build and test
         run: |
-          cd clara_test/run_test
+          cd clara_test
           chmod +x run_test
           ./run_test
