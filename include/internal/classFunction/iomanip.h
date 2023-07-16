@@ -66,7 +66,14 @@ class IOManipPointer : public IDisplay {
   }
 };
 
+#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ingored "-Weffc++"
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 class IOManipEigen : public IDisplay, private Display_Impl_ {
+#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#pragma GCC diagnostic pop
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
   cmat A_;
   double chop_;
 
@@ -75,16 +82,14 @@ class IOManipEigen : public IDisplay, private Display_Impl_ {
   template <typename Derived>
   explicit IOManipEigen(const Eigen::MatrixBase<Derived>& A, double chop = clara::chop)
       : A_{A.template cast<cplx>()}, chop_{chop} {}
-
-  // complex number
-  explicit IOManipEigen(const cplx z, double chop = clara::chop) : A_{cmat::Zero(1, 1)}, chop_{chop} {
-    // put complex number inside the eigen matrix
+  // complex numbers
+  explicit IOManipEigen(const cplx z, double chop = clara::chop)
+      : A_{cmat::Zero(1, 1)}, chop_{chop} {
     A_(0, 0) = z;
   }
-private:
-  std::ostream& display(std::ostream& os) const override {
-    return display_impl_(A_, os, chop);
-  }
+
+ private:
+  std::ostream& display(std::ostream& os) const override { return display_impl_(A_, os, chop); }
 };
 
 }  // namespace internal

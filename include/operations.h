@@ -16,10 +16,6 @@
 #include "internal/util.h"
 #include "types.h"
 
-#if (__GNUC__ && !__clang__)
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#endif  // (__GNUC__ && !__clang__)
-
 namespace clara {
 
 template <typename Derived1, typename Derived2>

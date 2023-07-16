@@ -1,9 +1,35 @@
 #!/usr/bin/bash
 
-echo "isntall eigen"
-sudo apt-get install libeigen3-dev
+OS=$(uname -s)
+PACKAGE_MANAGER=""
 
-echo "initailizing google test"
+if [[ "$OS" == "Linux" ]]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        PACKAGE_MANAGER="apt-get"
+    elif command -v pacman >/dev/null 2>&1; then
+        PACKAGE_MANAGER="pacman"
+    else
+        echo "Unsupported package manager. Exiting..."
+        exit 1
+    fi
+elif [[ "$OS" == "Darwin" ]]; then
+    PACKAGE_MANAGER="brew"
+else
+    echo "Unsupported operating system. Exiting..."
+    exit 1
+fi
+
+echo "Installing eigen"
+
+if [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
+    sudo apt-get install libeigen3-dev
+elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
+    sudo pacman -S eigen
+elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
+    brew install eigen
+fi
+
+echo "Initializing Google Test"
 git clone https://github.com/google/googletest.git -b release-1.11.0
 cd googletest
 mkdir build
@@ -11,7 +37,7 @@ cd build
 cmake ..
 make install
 
-echo "testing clara"
+echo "Testing Clara"
 cd ..
 cd ..
 mkdir build
@@ -19,9 +45,8 @@ cd build
 cmake ..
 make
 
-echo "\n"
-echo "result from clara test"
+echo ""
+echo "Result from Clara test"
 cd build
 cd tests
 ./clara_testing
-
