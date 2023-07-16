@@ -160,16 +160,22 @@ dyn_col_vect<cplx> evals(const Eigen::MatrixBase<Derived>& A) {
 
 template <typename Derived>
 cmat evects(const Eigen::MatrixBase<Derived>& A) {
-  const dyn_mat<typename Derived::Scalar>& rA = A.derived();
+  using Scalar = typename Derived::Scalar;
+  using ComplexScalar = std::complex<Scalar>;
+  using ComplexMatrix = Eigen::Matrix<ComplexScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
+const auto& rA = A.derived();
+  
   // check zero-size
-  if (!internal::check_nonzero_size(rA))
+  if (rA.rows() == 0 || rA.cols() == 0)
     throw Exception("clara::evects()", Exception::Type::MATRIX_NOT_SQUARE);
-  if (!internal::check_square_mat(rA))
+  if (rA.rows() != rA.cols())
     throw Exception("clara::evects()", Exception::Type::MATRIX_NOT_SQUARE);
-  Eigen::ComplexEigenSolver<cmat> es(rA.template cas<cplx>());
 
-  return eig(rA).second;
+  ComplexMatrix cA = rA.template cast<ComplexScalar>();
+  Eigen::ComplexEigenSolver<ComplexMatrix> es(cA);
+
+  return es.eigenvectors();
 }
 
 template <typename Derived>
