@@ -1,4 +1,4 @@
-name: Ubuntu Clara Test
+name: Mac Clara Test
 
 on:
   push:
@@ -12,14 +12,14 @@ on:
 
 jobs:
   build-and-testing:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install Eigen
-        run: sudo apt-get install libeigen3-dev
+        run: brew install eigen
 
       - name: Build and test
         run: |

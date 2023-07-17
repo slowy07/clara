@@ -11,6 +11,7 @@ Clara are open sourec library for quantum computing processing that is designed 
 Eigen is a high-performance C++ template library for linear algebra. It provides a wide range of features, including matrices, vectors, numerical solvers, and related algorithms. Eigen is designed to be fast, efficient, and flexible. It is used by a wide range of developers, including those working in the fields of computer graphics, machine learning, and scientific computing.
 
 website : [eigen.tuxfamily.org](https://eigen.tuxfamily.org/index.php?title=Main_Page)
+
 repository: [gitlab](https://gitlab.com/libeigen/eigen)
 
 *installation for clara*
@@ -77,3 +78,7 @@ information:
 - ``-Weffc++`` enables warnings about potential erroes in the code
 - ``-fopenmp`` enables ``OpenMP`` support
 - ``-g3`` enable debugging symbol
+
+## Reference
+
+reference (journal/article/paper) used in clara can check in [``REFERENCE.md``](REFERENCE.md)
