@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 OS=$(uname -s)
 PACKAGE_MANAGER=""
