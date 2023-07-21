@@ -5,164 +5,349 @@
 #include <string>
 namespace clara {
 
+namespace exception {
+
 class Exception : public std::exception {
- public:
-  enum class Type {
-    UNKNOWN_EXCEPTION = 1,
-    ZERO_SIZE,
-    MATRIX_NOT_SQUARE,
-    MATRIX_NOT_CVECTOR,
-    MATRIX_NOT_RVECTOR,
-    MATRIX_NOT_VECTOR,
-    MATRIX_NOT_SQUARE_OR_CVECTOR,
-    MATRIX_NOT_SQUARE_OR_RVECTOR,
-    MATRIX_NOT_SQUARE_OR_VECTOR,
-    MATRIX_MISMATCH_SUBSYS,
-    DIMS_INVALID,
-    DIMS_NOT_EQUAL,
-    DIMS_MISMATCH_MATRIX,
-    DIMS_MISMATCH_CVECTOR,
-    DIMS_MISMATCH_RVECTOR,
-    DIMS_MISMATCH_VECTOR,
-    SUBSYS_MISMATCH_DIMS,
-    PERM_INVALID,
-    PERM_MISMATCH_DIMS,
-    NOT_QUBIT_MATRIX,
-    NOT_QUBIT_CVECTOR,
-    NOT_QUBIT_RVECTOR,
-    NOT_QUBIT_VECTOR,
-    NOT_QUBIT_SUBSYS,
-    NOT_BIPARTITE,
-    NO_CODEWORD,
-    OUT_OF_RANGE,
-    TYPE_MISMATCH,
-    SIZE_MISMATCH,
-    UNDEFINED_TYPE,
-    CUSTOM_EXCEPTION
-  };
-
-  /**
-   * construct exception
-   */
-  Exception(const std::string& where, [[maybe_unused]] const Type& type)
-      : where_{where}, msg_{}, type_{}, custom_{} {
-    construct_exception_msg_();
-  }
-
-  Exception(const std::string& where, const std::string& custom)
-      : where_{where}, msg_{}, type_{Type::CUSTOM_EXCEPTION}, custom_{custom} {
-    construct_exception_msg_();
-  }
-
-  virtual const char* what() const noexcept override { return msg_.c_str(); }
-
  private:
-  std::string where_, msg_;
-  Type type_;
-  std::string custom_;
+  std::string where_;
+  mutable std::string msg_;
 
-  void construct_exception_msg_() {
+ public:
+  Exception(const std::string& where) : where_{where}, msg_{} {}
+
+  virtual const char* what() const noexcept override {
+    msg_.clear();
     msg_ += "IN ";
     msg_ += where_;
     msg_ += ": ";
-    switch (type_) {
-      case Type::UNKNOWN_EXCEPTION:
-        msg_ += "UNKNOWN EXCEPTION!";
-        break;
-      case Type::ZERO_SIZE:
-        msg_ += "Object has zero size!";
-        break;
-      case Type::MATRIX_NOT_SQUARE:
-        msg_ += "Matrix is not square!";
-        break;
-      case Type::MATRIX_NOT_CVECTOR:
-        msg_ += "Matrix is not column vector!";
-        break;
-      case Type::MATRIX_NOT_RVECTOR:
-        msg_ += "Matrix is not row vector!";
-        break;
-      case Type::MATRIX_NOT_VECTOR:
-        msg_ += "Matrix is not vector!";
-        break;
-      case Type::MATRIX_NOT_SQUARE_OR_CVECTOR:
-        msg_ += "Matrix is not square nor column vector!";
-        break;
-      case Type::MATRIX_NOT_SQUARE_OR_RVECTOR:
-        msg_ += "Matrix is not square nor row vector!";
-        break;
-      case Type::MATRIX_NOT_SQUARE_OR_VECTOR:
-        msg_ += "Matrix is not square nor vector!";
-        break;
-      case Type::MATRIX_MISMATCH_SUBSYS:
-        msg_ += "Matrix mismatch subsystems!";
-        break;
-      case Type::DIMS_INVALID:
-        msg_ += "Invalid dimension(s)!";
-        break;
-      case Type::DIMS_NOT_EQUAL:
-        msg_ += "Dimensions not equal!";
-        break;
-      case Type::DIMS_MISMATCH_MATRIX:
-        msg_ += "Dimension(s) mismatch matrix size!";
-        break;
-      case Type::DIMS_MISMATCH_CVECTOR:
-        msg_ += "Dimension(s) mismatch column vector!";
-        break;
-      case Type::DIMS_MISMATCH_RVECTOR:
-        msg_ += "Dimension(s) mismatch row vector!";
-        break;
-      case Type::DIMS_MISMATCH_VECTOR:
-        msg_ += "Dimension(s) mismatch vector!";
-        break;
-      case Type::SUBSYS_MISMATCH_DIMS:
-        msg_ += "Subsystems mismatch dimensions!";
-        break;
-      case Type::PERM_INVALID:
-        msg_ += "Invalid permutation!";
-        break;
-      case Type::PERM_MISMATCH_DIMS:
-        msg_ += "Permutation mismatch dimensions!";
-        break;
-      case Type::NOT_QUBIT_MATRIX:
-        msg_ += "Matrix is not 2 x 2!";
-        break;
-      case Type::NOT_QUBIT_CVECTOR:
-        msg_ += "Column vector is not 2 x 1!";
-        break;
-      case Type::NOT_QUBIT_RVECTOR:
-        msg_ += "Row vector is not 1 x 2!";
-        break;
-      case Type::NOT_QUBIT_VECTOR:
-        msg_ += "Vector is not 2 x 1 nor 1 x 2!";
-        break;
-      case Type::NOT_QUBIT_SUBSYS:
-        msg_ += "Subsystems are not qubits!";
-        break;
-      case Type::NOT_BIPARTITE:
-        msg_ += "Not bi-partite!";
-        break;
-      case Type::NO_CODEWORD:
-        msg_ += "Codeword does not exist!";
-        break;
-      case Type::OUT_OF_RANGE:
-        msg_ += "Parameter out of range!";
-        break;
-      case Type::TYPE_MISMATCH:
-        msg_ += "Type mismatch!";
-        break;
-      case Type::SIZE_MISMATCH:
-        msg_ += "Size mismatch!";
-        break;
-      case Type::UNDEFINED_TYPE:
-        msg_ += "Not defined for this type!";
-        break;
-      case Type::CUSTOM_EXCEPTION:
-        msg_ += "CUSTOM EXCEPTION ";
-        break;
-    }
+    msg_ += this->type_description();
+    msg_ += "!";
+    return msg_.c_str();
   }
+  virtual std::string type_description() const = 0;
 };
 
+inline std::string Exception::type_description() const { return "clara::exception::Exception"; }
+
+/**
+ * @class clara::exception::Unknwon
+ * thrown when no other exception is suitable
+ */
+class Unknown : public Exception {
+ public:
+  std::string type_description() const override { return "UNKNOWN EXCEPTION"; }
+  using Exception::Exception;
+};
+
+/**
+ * @brief exception type description
+ * @return object has zero size exception
+ */
+
+class ZeroSize : public Exception {
+ public:
+  std::string type_description() const override { return "Object has zero size"; }
+  using Exception::Exception;
+};
+
+/**
+ * @brief clara::exception::MatrixNotSquare
+ * @brief matrix is not square exception
+ */
+class MatrixNotSquare : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not square"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::MatrixNotCvector
+ * @brief matrix is not column vector exception
+ */
+
+class MatrixNotCvector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not column vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::MatrixRowVector
+ * @brief matrix is not a row vector exception
+ */
+class MatrixNotRvector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not row vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::MatrixxNotVector
+ * @brief matrix is not vector Exception
+ */
+class MatrixNotVector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::MatrixSquareNotCvector
+ * @brief matrix is not column vector exception
+ */
+class MatrixNotSquareNotCvector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not square not column vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @brief clara::exception::MatrixNotSquareNotRvector
+ * @biref matrix is not square not row vector exception
+ */
+class MatrixNotSquareNotRvector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not square not row vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @brief clara::Exception::MatrixNotSquareNotVector
+ * @brief matrix is not square not vector exception
+ */
+class MatriNotSquareNotVector : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not square not vector"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::MatrixMismatchSubsys
+ * @brief matrix mismatch subsytem exception
+ */
+class MatrixMismatchSubsys : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix mismatch subsystem"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsInvalid
+ * @brief invalid dimension exception
+ */
+class DimsInvalid : public Exception {
+ public:
+  std::string type_description() const override { return "Invalid dimension (s)"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsNotEqual
+ * @brief dimension not equal exception
+ */
+class DimsNotEqual : public Exception {
+ public:
+  std::string type_description() const override { return "Dimensional not equal"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsMismatchMatrix
+ * @brief dimension mismatch matrix size exception
+ */
+class DimsMismatchMatrix : public Exception {
+ public:
+  std::string type_description() const override { return "Dimension mismatch matrix size"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsMismatchCvector
+ * @brief Dimension(s) mismatch column vector size exception
+ * product of the elements of std::vector<idx> of dimension is not equal to
+ * the number of elements of the Eigen::Matrix
+ */
+class DimsMismatchCvector : public Exception {
+ public:
+  std::string type_description() const override {
+    return "Dimension(s) mismatch column vector size";
+  }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsMismatchRvector
+ * @brief Dimension(s) mismatch row vector size exception
+ * product of the elements of std::vector<idx> of dimension is not equal
+ * to the number of the elements of the Eigen::Matrix
+ */
+class DimsMismatchRvector : public Exception {
+ public:
+  std::string type_description() const override { return "Dimension(s) mismatch row vector size"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::DimsMismatchVector
+ * @brief Dimension mismatch vector size exception
+ * prodcut of the element of std::vector<idx> of dimension is not equal
+ */
+class DimsMismatchVector : public Exception {
+ public:
+  std::string type_description() const override { return "Dimension(s) mismatch vector size"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::SubsysMismatchDims
+ * @brief Subsystem mismatch dimension exception
+ */
+class SubsysMismatchdims : public Exception {
+ public:
+  std::string type_description() const override { return "Subsytem mismatch dimensions"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::PermInvalid
+ * @brief invalid permutation exception
+ */
+class PermInvalid : public Exception {
+ public:
+  std::string type_description() const override { return "Invalid permutation"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::PermMismatchDims
+ * @brief permutateion mismatch dimension exception
+ */
+class PermMismatchDims : public Exception {
+ public:
+  std::string type_description() const override { return "Permutation mismatch dimensions"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NotQubitMatrix
+ * @brief matrix is not 2 x 2 exception
+ */
+class NotQubitMatrix : public Exception {
+ public:
+  std::string type_description() const override { return "Matrix is not 2 x 2"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NOtQubitCvector
+ * @brief column vector is not 2 x 1 exception
+ */
+class NOtQubitCvector : public Exception {
+ public:
+  std::string type_description() const override { return "Column vector is not 2 x 1"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NotQubitRvector
+ * @brief row vector is not 1 x 2 exception
+ */
+class NotQubitRvector : public Exception {
+ public:
+  std::string type_description() const override { return "Row vector is not 1 x 2"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NotQubitVector
+ * @brief vector is not 2 x 1 nor 1 x 2 exception
+ */
+class NotQubitVector : public Exception {
+ public:
+  std::string type_description() const override { return "Vector is not 2 x 1 nor 1 x 2"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NotQubitSubsys
+ * @brief Subystem are not qubits exception
+ */
+class NotQubitSubsys : public Exception {
+ public:
+  std::string type_description() const override { return "Subsytem are not qubits"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NotBipartite
+ * @brief not bi-bipartite exception
+ */
+class NotBipartite : public Exception {
+ public:
+  std::string type_description() const override { return "Not bi-bipartite"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::NoCodeword
+ * @brief codeword does not exist exception
+ */
+class NoCodeword : public Exception {
+ public:
+  std::string type_description() const override { return "Codeword does not exist"; };
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::OutOfRange
+ * @brief paramtere out of range exception
+ */
+class OutOfRange : public Exception {
+ public:
+  std::string type_description() const override { return "Parameter out of range"; }
+  using Exception::Exception;
+};
+
+class TypeMismatch : public Exception {
+ public:
+  std::string type_description() const override { return "Type mismatch"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::SizMismatch
+ * @brief size mismatch exception
+ */
+class SizeMismatch : public Exception {
+ public:
+  std::string type_description() const override { return "Size mismatch"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::UndefinedType
+ * @brief not defined for this type exception
+ */
+class UndefinedType : public Exception {
+ public:
+  std::string type_description() const override { return "Not defined for this type"; }
+  using Exception::Exception;
+};
+
+/**
+ * @class clara::exception::CustomException
+ * @brief custom exception
+ */
+class CustomException : public Exception {
+  std::string what_{};
+  std::string type_description() const override { return "CUSTOM EXCEPTION " + what_; }
+
+ public:
+  CustomException(const std::string& where, const std::string& what)
+      : Exception{where}, what_{what} {}
+};
+
+}  // namespace exception
 }  // namespace clara
 
 #endif  // !CLASSFUNCTION_EXCEPTION_H_

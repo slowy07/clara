@@ -13,8 +13,8 @@ class Init final : public internal::Singleton<const Init> {
 
  private:
   Init() {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(4);
+    // std::cout << std::fixed;
+    // std::cout << std::setprecision(4);
   }
   ~Init() {}
 };

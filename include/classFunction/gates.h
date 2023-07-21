@@ -69,7 +69,7 @@ class Gates final : public internal::Singleton<const Gates> {
    */
   cmat Rn(double theta, const std::vector<double>& n) const {
     if (n.size() != 3)
-      throw Exception("clara::gates::Rn()", "n is not a 3-dimensional vector");
+      throw exception::CustomException("clara::Gates::Rn()", "n is not a 3-dimensional vector!");
     cmat result(2, 2);
     result =
         std::cos(theta / 2) * Id2 - 1_i * std::sin(theta / 2) * (n[0] * X + n[1] * Y + n[2] * Z);
@@ -80,12 +80,12 @@ class Gates final : public internal::Singleton<const Gates> {
    * @brief generalized Z gates for qudits
    * @note define as \f$ Z = \sum_{j=0}^{D-1} \exp(2\pi \mathrm{i} j/D) |j\rangle\langle j| \f$
    */
-  cmat Zd(idx D) const {
+  cmat Zd(idx D = 2) const {
     if (D == 0)
-      throw Exception("clara::Gates::Zd()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::Zd()");
     cmat result = cmat::Zero(D, D);
     for (idx i = 0; i < D; ++i)
-      result(i, i) = std::pow(omega(D), i);
+      result(i, i) = std::pow(omega(D), static_cast<double>(i));
     return result;
   }
 
@@ -93,16 +93,16 @@ class Gates final : public internal::Singleton<const Gates> {
    * @brief fourier transform gate for qudits
    * @note define as \f$ F = \sum_{j,k=0}^{D-1} \exp(2\pi \mathrm{i} jk/D) |j\rangle\langle k| \f$
    */
-  cmat Fd(idx D) const {
+  cmat Fd(idx D = 2) const {
     if (D == 0)
-      throw Exception("clara::Gates::Fd()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::Fd()");
     cmat result(D, D);
 #ifdef WITH_OPENMP_
 #pragma omp parallel for collapse(2)
 #endif  // DEBUG
     for (idx j = 0; j < D; ++j)
       for (idx i = 0; i < D; ++i)
-        result(i, j) = 1 / std::sqrt(D) * std::pow(omega(D), i * j);
+        result(i, j) = 1 / std::sqrt(D) * std::pow(omega(D), static_cast<double>(i * j));
     return result;
   }
 
@@ -111,9 +111,9 @@ class Gates final : public internal::Singleton<const Gates> {
    * @note define as f$ X = \sum_{j=0}^{D-1} |j\oplus 1\rangle\langle j| \f$, ie raising operator
    * \f$ X|j\rangle = |j\oplus 1\rangle\f$
    */
-  cmat Xd(idx D) const {
+  cmat Xd(idx D = 2) const {
     if (D == 0)
-      throw Exception("clara::Gates::Xd()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::Xd()");
     return Fd(D).inverse() * Zd(D) * Fd(D);
   }
 
@@ -123,9 +123,9 @@ class Gates final : public internal::Singleton<const Gates> {
    * specifying the template paramter
    */
   template <typename Derived = Eigen::MatrixXcd>
-  Derived Id(idx D) const {
+  Derived Id(idx D = 2) const {
     if (D == 0)
-      throw Exception("clara::Gates::Id()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::Id()");
     return Derived::Identity(D, D);
   }
 
@@ -141,24 +141,24 @@ class Gates final : public internal::Singleton<const Gates> {
 
     // check matrix zero size
     if (!internal::check_nonzero_size(rA))
-      throw Exception("clara::Gates::CTRL()", Exception::Type::ZERO_SIZE);
+      throw exception::ZeroSize("clara::Gates::CTRL()");
 
     // check square matrix
     if (!internal::check_square_mat(rA))
-      throw Exception("clara::Gates::CTRL()", Exception::Type::MATRIX_NOT_SQUARE);
+      throw exception::MatrixNotSquare("clara::Gates::CTRL()");
 
     // check list zero size
     if (ctrl.size() == 0)
-      throw Exception("clara::Gates::CTRL()", Exception::Type::ZERO_SIZE);
+      throw exception::ZeroSize("clara::Gates::CTRL()");
     if (subsys.size() == 0)
-      throw Exception("clara::Gates::CTRL()", Exception::Type::ZERO_SIZE);
+      throw exception::ZeroSize("clara::Gates::CTRL()");
 
     // check out of range
     if (N == 0)
-      throw Exception("clara::Gates::CTRL()", Exception::Type::OUT_OF_RANGE);
+      throw exception::OutOfRange("clara::Gates::CTRL()");
     // check valid local dimension
     if (d == 0)
-      throw Exception("clara::Gates::CTRL()", Exception::Type::DIMS_INVALID);
+      throw exception::OutOfRange("clara::Gates::CTRL()");
 
     // control gate subsystem
     std::vector<idx> ctrlgate = ctrl;
@@ -172,11 +172,12 @@ class Gates final : public internal::Singleton<const Gates> {
      * with respect to local dimensions
      */
     if (!internal::check_subsys_match_dims(ctrlgate, dims))
-      throw Exception("clara::Gates::CTRL()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+      throw exception::SubsysMismatchdims("clara::Gates::CTRL()");
 
     // check that subsys list match the dimension of the matrix
-    if (rA.rows() != std::llround(std::pow(d, subsys.size())))
-      throw Exception("clara::Gates::CTRL()", Exception::Type::DIMS_MISMATCH_MATRIX);
+    using Index = typename dyn_mat<typename Derived::Scalar>::Index;
+    if (A.rows() != static_cast<Index>(std::llround(std::pow(d, subsys.size()))))
+      throw exception::DimsMismatchMatrix("clara::Gates::CTRL()");
 
     idx Cdims[maxn];
     idx midx_row[maxn];
@@ -266,20 +267,20 @@ class Gates final : public internal::Singleton<const Gates> {
                                               const std::vector<idx>& dims) const {
     const dyn_mat<typename Derived::Scalar>& rA = A.derived();
     if (!internal::check_nonzero_size(rA))
-      throw Exception("clara::Gates::expandout()", Exception::Type::ZERO_SIZE);
+      throw exception::ZeroSize("clara::Gates::expandout()");
     // check that dims is a valid dimension vector
     if (!internal::check_dims(dims))
-      throw Exception("clara::Gates::expandout()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::expandout()");
     // check square matrix
     if (!internal::check_square_mat(rA))
-      throw Exception("clara::Gates::expandout()", Exception::Type::MATRIX_NOT_SQUARE);
+      throw exception::MatrixNotSquare("clara::Gates::expandout()");
 
     // check that position is valid
     if (pos > dims.size() - 1)
-      throw Exception("clara::Gates::expandout()", Exception::Type::OUT_OF_RANGE);
+      throw exception::OutOfRange("clara::Gates::expandout()");
     // check that dims[pos] match dimension of A
     if (static_cast<idx>(rA.rows()) != dims[pos])
-      throw Exception("clara::Gates::expandout()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::Gates::expandout()");
 
     idx D = std::accumulate(std::begin(dims), std::end(dims), static_cast<idx>(1),
                             std::multiplies<idx>());
@@ -333,10 +334,10 @@ class Gates final : public internal::Singleton<const Gates> {
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos, idx N,
                                               idx d = 2) const {
     if (!internal::check_nonzero_size(A))
-      throw Exception("clara::Gates::expandout()", Exception::Type::ZERO_SIZE);
+      throw exception::ZeroSize("clara::Gates::expandout()");
     // check valid dims
     if (d == 0)
-      throw Exception("clara::Gates::expandout()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::Gates::expandout()");
 
     std::vector<idx> dims(N, d);
     return this->expandout(A, pos, dims);

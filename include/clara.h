@@ -36,8 +36,8 @@
 #include <utility>
 #include <vector>
 
-// preprocessor macro
-#include "macros.h"
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/SVD>
 
 // inter dependicies
 #include "classFunction/codes.h"
@@ -57,7 +57,6 @@
 #include "internal/classFunction/iomanip.h"
 #include "internal/classFunction/singleton.h"
 #include "internal/util.h"
-#include "macros.h"
 #include "number_theory.h"
 #include "operations.h"
 #include "random.h"

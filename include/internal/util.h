@@ -2,6 +2,7 @@
 #define INTERNAL_UTIL_H_
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <functional>
 #include <iomanip>
@@ -28,12 +29,18 @@ inline void n2multiidx(idx n, idx numdims, const idx* const dims, idx* result) n
     assert(n < D);
   }
 #endif  // !NDEBUG
+  // no error check in release version to improve speed
   for (idx i = 0; i < numdims; ++i) {
     result[numdims - i - 1] = n % (dims[numdims - i - 1]);
     n /= (dims[numdims - i - 1]);
   }
 }
 
+#if (__GNUC__ && !__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 /**
  * multiindex to integer
  * standard lexicographical order
@@ -51,6 +58,10 @@ inline idx multiidx2n(const idx* const midx, idx numdims, const idx* const dims)
   }
   return result + midx[numdims - 1];
 }
+
+#if (__GNUC__ && !__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 // check square matrix
 template <typename Derived>
@@ -106,6 +117,10 @@ inline bool check_dims(const std::vector<idx>& dims) {
  */
 template <typename Derived>
 bool check_dims_match_mat(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
+#ifndef NDEBUG
+  assert(dims.size() > 0);
+  assert(A.rows() == A.cols());
+#endif  // !NDEBUG
   idx proddim = std::accumulate(std::begin(dims), std::end(dims), static_cast<idx>(1),
                                 std::multiplies<idx>());
   return proddim == static_cast<idx>(A.rows());
@@ -114,6 +129,11 @@ bool check_dims_match_mat(const std::vector<idx>& dims, const Eigen::MatrixBase<
 // check that valid dims match the dimension of valid column vector
 template <typename Derived>
 bool check_dims_match_cvect(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
+#ifndef NDEBUG
+  assert(dims.size() > 0);
+  assert(A.rows() > 0);
+  assert(A.cols() == 1);
+#endif  // !NDEBUG
   idx proddim = std::accumulate(std::begin(dims), std::end(dims), static_cast<idx>(1),
                                 std::multiplies<idx>());
   return proddim == static_cast<idx>(A.rows());
@@ -122,6 +142,11 @@ bool check_dims_match_cvect(const std::vector<idx>& dims, const Eigen::MatrixBas
 // check that valid dims mtch the dimension of valid row vector
 template <typename Derived>
 bool check_dims_match_rvect(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
+#ifndef NDEBUG
+  assert(dims.size() > 0);
+  assert(A.cols() > 0);
+  assert(A.rows() == 1);
+#endif  // !NDEBUG
   idx proddim = std::accumulate(std::begin(dims), std::end(dims), static_cast<idx>(1),
                                 std::multiplies<idx>());
   return proddim == static_cast<idx>(A.cols());
@@ -129,6 +154,10 @@ bool check_dims_match_rvect(const std::vector<idx>& dims, const Eigen::MatrixBas
 
 // check that all elements in valid dims equal to dim
 inline bool check_eq_dims(const std::vector<idx>& dims, idx dim) noexcept {
+#ifndef NDEBUG
+  assert(dims.size() > 0);
+#endif  // !NDEBUG
+
   for (idx i : dims)
     if (i != dim)
       return false;
@@ -197,11 +226,14 @@ dyn_mat<typename Derived1::Scalar> kron2(const Eigen::MatrixBase<Derived1>& A,
   const dyn_mat<typename Derived2::Scalar>& rB = B.derived();
 
   if (!std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value)
-    throw Exception("clara::kron()", Exception::Type::TYPE_MISMATCH);
+    throw exception::TypeMismatch("clara::kron()");
+
+  if (!internal::check_nonzero_size(rA))
+    throw exception::ZeroSize("clara::kron()");
 
   // check zero size
   if (!internal::check_nonzero_size(rB))
-    throw Exception("clara::kron()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::kron()");
 
   idx Acols = static_cast<idx>(rA.cols());
   idx Arows = static_cast<idx>(rA.rows());
@@ -227,11 +259,11 @@ dyn_mat<typename Derived1::Scalar> dirsum2(const Eigen::MatrixBase<Derived1>& A,
   const dyn_mat<typename Derived2::Scalar>& rB = B.derived();
 
   if (!std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value)
-    throw Exception("clara::dirsum()", Exception::Type::TYPE_MISMATCH);
+    throw exception::ZeroSize("clara::dirsum()");
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::dirsum()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::dirsum()");
   if (!internal::check_nonzero_size(rB))
-    throw Exception("clara::dirsum()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::dirsum()");
   idx Acols = static_cast<idx>(rA.cols());
   idx Arows = static_cast<idx>(rA.rows());
   idx Bcols = static_cast<idx>(rB.cols());
@@ -259,6 +291,10 @@ void variadic_vector_emplace(std::vector<T>& v, First&& first, Args&&... args) {
  * dimension d) from an object (ket/bra/density matrix) of size sz
  */
 inline idx get_num_subsys(idx sz, idx d) {
+#ifndef NDEBUG
+  assert(sz > 0);
+  assert(d > 1);
+#endif  // !NDEBUG
   return static_cast<idx>(std::llround(std::log2(sz) / std::log2(d)));
 }
 
@@ -268,6 +304,10 @@ inline idx get_num_subsys(idx sz, idx d) {
  * consiting of N subsystem
  */
 inline idx get_dim_subsystem(idx sz, idx N) {
+  #ifndef NDEBUG
+  assert(N > 0);
+  assert(sz > 0);
+  #endif // !NDEBUG
   if (N == 2)
     return static_cast<idx>(std::llround(std::sqrt(sz)));
   return static_cast<idx>(std::llround(std::pow(sz, 1. / N)));

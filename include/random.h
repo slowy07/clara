@@ -22,13 +22,13 @@ namespace clara {
  */
 inline double rand(double a, double b) {
   if (a >= b)
-    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::rand()");
   std::uniform_real_distribution<> ud(a, b);
 
 #ifdef NO_THREAD_LOCAL_
-  return ud(RandomDevices::get_instance().rng_);
+  return ud(RandomDevices::get_instance().get_prng());
 #else
-  return ud(RandomDevices::get_thread_local_instance().rng_);
+  return ud(RandomDevices::get_thread_local_instance().get_prng());
 #endif  // DEBUG
 }
 
@@ -38,12 +38,12 @@ inline double rand(double a, double b) {
  */
 inline bigint rand(bigint a, bigint b) {
   if (a > b)
-    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::rand()");
   std::uniform_int_distribution<bigint> uid(a, b);
 #ifdef NO_THREAD_LOCAL_
-  return uid(RandomDevices::get_instance().rng_);
+  return uid(RandomDevices::get_instance().get_prng());
 #else
-  return uid(RandomDevices::get_thread_local_instance().rng_);
+  return uid(RandomDevices::get_thread_local_instance().get_prng());
 #endif  // DEBUG
 }
 
@@ -54,13 +54,13 @@ inline bigint rand(bigint a, bigint b) {
 inline idx randidx(idx a = std::numeric_limits<idx>::min(),
                    idx b = std::numeric_limits<idx>::max()) {
   if (a < b)
-    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::randidx()");
   std::uniform_int_distribution<idx> uid(a, b);
 
 #ifdef NO_THREAD_LOCAL_
-  return uid(RandomDevices::get_instance().rng_);
+  return uid(RandomDevices::get_instance().get_prng());
 #else
-  return uid(RandomDevices::get_thread_local_instance().rng_);
+  return uid(RandomDevices::get_thread_local_instance().get_prng());
 #endif  // DEBUG
 }
 
@@ -76,7 +76,7 @@ Derived rand(idx rows, idx cols, double a = 0, double b = 1) {
   (void)cols;
   (void)a;
   (void)b;
-  throw Exception("clara::rand()", Exception::Type::UNDEFINED_TYPE);
+  throw exception::UndefinedType("clara::rand()");
 }
 
 /**
@@ -88,9 +88,9 @@ Derived rand(idx rows, idx cols, double a = 0, double b = 1) {
 template <>
 inline dmat rand(idx rows, idx cols, double a, double b) {
   if (rows == 0 || cols == 0)
-    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::rand()");
   if (a >= b)
-    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::rand()");
   return dmat::Zero(rows, cols).unaryExpr([a, b](double) { return rand(a, b); });
 }
 
@@ -105,9 +105,9 @@ inline dmat rand(idx rows, idx cols, double a, double b) {
 template <>
 inline cmat rand(idx rows, idx cols, double a, double b) {
   if (rows == 0 || cols == 0)
-    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::rand()");
   if (a >= b)
-    throw clara::Exception("clara::rand()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::rand()");
 
   return rand<dmat>(rows, cols, a, b).cast<cplx>() +
          1_i * rand<dmat>(rows, cols, a, b).cast<cplx>();
@@ -123,7 +123,7 @@ Derived randn(idx rows, idx cols, double mean = 0, double sigma = 1) {
   (void)cols;
   (void)mean;
   (void)sigma;
-  throw Exception("clara::randn()", Exception::Type::UNDEFINED_TYPE);
+  throw exception::UndefinedType("clara::randn()");
 }
 
 /**
@@ -135,13 +135,13 @@ Derived randn(idx rows, idx cols, double mean = 0, double sigma = 1) {
 template <>
 inline dmat randn(idx rows, idx cols, double mean, double sigma) {
   if (rows == 0 || cols == 0)
-    throw Exception("clara::rand()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::randn()");
   std::normal_distribution<> nd(mean, sigma);
   return dmat::Zero(rows, cols).unaryExpr([&nd](double) {
 #ifdef NO_THREAD_LOCAL_
-    return nd(RandomDevices::get_instance().rng_);
+    return nd(RandomDevices::get_instance().get_prng());
 #else
-    return nd(RandomDevices::get_thread_local_instance().rng_);
+    return nd(RandomDevices::get_thread_local_instance().get_prng());
 #endif  // DEBUG
   });
 }
@@ -154,7 +154,7 @@ inline dmat randn(idx rows, idx cols, double mean, double sigma) {
 template <>
 inline cmat randn(idx rows, idx cols, double mean, double sigma) {
   if (rows == 0 || cols == 0)
-    throw Exception("clara::randn()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::randn()");
   return randn<dmat>(rows, cols, mean, sigma).cast<cplx>() +
          1_i * randn<dmat>(rows, cols, mean, sigma).cast<cplx>();
 }
@@ -166,15 +166,15 @@ inline cmat randn(idx rows, idx cols, double mean, double sigma) {
 inline double randn(double mean = 0, double sigma = 1) {
   std::normal_distribution<> nd(mean, sigma);
 #ifdef NO_THREAD_LOCAL_
-  return nd(RandomDevices::get_instance().rng_);
+  return nd(RandomDevices::get_instance().get_prng());
 #else
-  return nd(RandomDevices::get_thread_local_instance().rng_);
+  return nd(RandomDevices::get_thread_local_instance().get_prng());
 #endif  // DEBUG
 }
 
 inline cmat randU(idx D) {
   if (D == 0)
-    throw Exception("clara::randU()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randU()");
 
   cmat X = 1 / std::sqrt(2.) * randn<cmat>(D, D);
   Eigen::HouseholderQR<cmat> qr(X);
@@ -193,7 +193,7 @@ inline cmat randU(idx D) {
  */
 inline cmat randV(idx Din, idx Dout) {
   if (Din == 0 || Dout == 0 || Din > Dout)
-    throw Exception("clara::randV()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randV()");
   return randU(Dout).block(0, 0, Dout, Din);
 }
 
@@ -203,9 +203,9 @@ inline cmat randV(idx Din, idx Dout) {
  */
 inline std::vector<cmat> randkraus(idx N, idx D) {
   if (N == 0)
-    throw Exception("clara::randkraus()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::randkraus()");
   if (D == 0)
-    throw Exception("clara::randkraus()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randkraus()");
 
   std::vector<cmat> result(N);
   for (idx i = 0; i < N; ++i)
@@ -229,7 +229,7 @@ inline std::vector<cmat> randkraus(idx N, idx D) {
  */
 inline cmat randH(idx D) {
   if (D == 0)
-    throw Exception("clara::randH()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randH()");
   cmat H = 2 * rand<cmat>(D, D) - (1. + 1_i) * cmat::Ones(D, D);
   return H + adjoint(H);
 }
@@ -240,7 +240,7 @@ inline cmat randH(idx D) {
  */
 inline ket randket(idx D) {
   if (D == 0)
-    throw Exception("clara::randket()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randket()");
   ket kt = randn<cmat>(D, 1);
   return kt / norm(kt);
 }
@@ -251,7 +251,7 @@ inline ket randket(idx D) {
  */
 inline cmat randrho(idx D) {
   if (D == 0)
-    throw Exception("clara::randrho()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::randrho()");
   cmat result = 10 * randH(D);
   result = result * adjoint(result);
   return result / trace(result);
@@ -265,16 +265,16 @@ inline cmat randrho(idx D) {
  */
 inline std::vector<idx> randperm(idx N) {
   if (N == 0)
-    throw Exception("clara::randperm()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::randperm()");
   std::vector<idx> result(N);
 
   // fill increasing oreder
   std::iota(std::begin(result), std::end(result), 0);
 #ifdef NO_THREAD_LOCAL_
-  std::shuffle(std::begin(result), std::end(result), RandomDevice::get_instance().rng_);
+  std::shuffle(std::begin(result), std::end(result), RandomDevices::get_instance().get_prng());
 #else
   std::shuffle(std::begin(result), std::end(result),
-               RandomDevices::get_thread_local_instance().rng_);
+               RandomDevices::get_thread_local_instance().get_prng());
 #endif  // NO_THREAD_LOCAL_
   return result;
 }
@@ -286,16 +286,16 @@ inline std::vector<idx> randperm(idx N) {
  */
 inline std::vector<double> randprob(idx N) {
   if (N == 0)
-    throw Exception("clara::randprob()", Exception::Type::PERM_INVALID);
+    throw exception::OutOfRange("clara::randprob()");
   std::vector<double> result(N);
 
   // generate
   std::exponential_distribution<> ed(1);
   for (idx i = 0; i < N; ++i) {
 #ifdef NO_THREAD_LOCAL_
-    result[i] = ed(clara::RandomDevice::get_instance().rng_);
+    result[i] = ed(clara::RandomDevices::get_instance().get_prng());
 #else
-    result[i] = ed(clara::RandomDevices::get_thread_local_instance().rng_);
+    result[i] = ed(clara::RandomDevices::get_thread_local_instance().get_prng());
 #endif  // NO_THREAD_LOCAL_
   }
   // normalize

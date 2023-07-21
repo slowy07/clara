@@ -18,6 +18,13 @@ class Timer : public IDisplay {
    * as starting point
    */
   Timer() noexcept : start_{CLOCK_T::now()}, end_{start_} {}
+
+  /**
+   * @brief reset the chronometer
+   * reset the starting/ending point to the current time
+   */
+  void tic() noexcept { start_ = end_ = CLOCK_T::now(); }
+
   /**
    * @brief stops the chronometer
    * set the current time as the ending point

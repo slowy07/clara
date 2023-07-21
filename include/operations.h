@@ -28,44 +28,44 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   const dyn_mat<typename Derived2::Scalar>& rA = A.derived();
 
   if (!std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value)
-    throw Exception("clara::applyCTRL()", Exception::Type::TYPE_MISMATCH);
+    throw exception::TypeMismatch("clara::applyCTRL()");
 
   // check zero size
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::applyCTRL()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::applyCTRL()");
   if (!internal::check_nonzero_size(rstate))
-    throw Exception("clara::applyCTRL()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::applyCTRL()");
 
   // check square matrix for the gate
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::applyCTRL()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::applyCTRL()");
 
   // check that all control subsystem have the same dimension
   idx d = ctrl.size() > 0 ? dims[ctrl[0]] : 1;
   for (idx i = 1; i < ctrl.size(); ++i)
     if (dims[ctrl[i]] != d)
-      throw Exception("qpp::applyCTRL()", Exception::Type::DIMS_NOT_EQUAL);
+      throw exception::DimsNotEqual("clara::applyCTRL()");
   // check that dimension is valid
   if (!internal::check_dims(dims))
-    throw Exception("clara::applyCTRL()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::applyCTRL()");
 
   // check subsys
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw Exception("clara::applyCTRL()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::applyCTRL()");
 
   // check that gate matches the dimension of the subsys
   std::vector<idx> subsys_dims(subsys.size());
   for (idx i = 0; i < subsys.size(); ++i)
     subsys_dims[i] = dims[subsys[i]];
   if (!internal::check_dims_match_mat(subsys_dims, rA))
-    throw Exception("clara::applyCTRL()", Exception::Type::MATRIX_MISMATCH_SUBSYS);
+    throw exception::MatrixMismatchSubsys("clara::applyCTRL()");
 
   std::vector<idx> ctrlgate = ctrl;
   ctrlgate.insert(std::end(ctrlgate), std::begin(subsys), std::end(subsys));
   std::sort(std::begin(ctrlgate), std::end(ctrlgate));
 
   if (!internal::check_subsys_match_dims(ctrlgate, dims))
-    throw Exception("clara::applyCTRL()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::applyCTRL()");
 
   // contruct the table of A^i
   std::vector<dyn_mat<typename Derived1::Scalar>> Ai;
@@ -255,9 +255,9 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
     return std::make_tuple(coeff, idxrow, idxcol);
   };
 
-  if (internal::check_vector(rstate)) {
+  if (internal::check_cvector(rstate)) {
     if (!internal::check_dims_match_cvect(dims, rstate))
-      throw Exception("clara::applyCTRL()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::applyCTRL()");
     if (D == 1)
       return rstate;
     dyn_mat<typename Derived1::Scalar> result = rstate;
@@ -278,7 +278,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   } else if (internal::check_square_mat(rstate)) {
     // density matrix
     if (!internal::check_dims_match_mat(dims, rstate))
-      throw Exception("clara::applyCTRL()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::applyCTRL()");
 
     if (D == 1)
       return rstate;
@@ -304,7 +304,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
             }
     return result;
   } else
-    throw Exception("clara::applyCTRL()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::applyCTRL()");
 }
 
 /**
@@ -323,10 +323,10 @@ dyn_mat<typename Derived2::Scalar> applyCtrl(const Eigen::MatrixBase<Derived1>& 
 
   // check zero size
   if (!internal::check_nonzero_size(rstate))
-    throw Exception("clara::applyCTRL()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::applyCTRL()");
 
-  if (d == 0)
-    throw Exception("clara::applyCTRL()", Exception::Type::DIMS_INVALID);
+  if (d < 2)
+    throw exception::DimsInvalid("clara::applyCTRL()");
 
   idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
   std::vector<idx> dims(N, d);
@@ -350,11 +350,11 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
 
   // check zero size
   if (!internal::check_nonzero_size(rstate))
-    throw Exception("clara::applyCTRL()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::applyCTRL()");
 
   // check valid dims
   if (d == 0)
-    throw Exception("clara::applyCTRL()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::applyCTRL()");
   idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
   std::vector<idx> dims(N, d);
 
@@ -378,48 +378,45 @@ dyn_mat<typename Derived1::Scalar> apply(const Eigen::MatrixBase<Derived1>& stat
 
   // check types
   if (!std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value)
-    throw Exception("clara::apply()", Exception::Type::TYPE_MISMATCH);
+    throw exception::TypeMismatch("clara::apply()");
 
   // check zero-size
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::apply()", Exception::Type::TYPE_MISMATCH);
+    throw exception::ZeroSize("clara::apply()");
 
   // check zero size
   if (!internal::check_nonzero_size(rstate))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::apply()");
 
-  if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
-
-  // check square matrix for the gate
+  // check square mat
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::apply()");
 
   // check that dimensional is valid
   if (!internal::check_dims(dims))
-    throw Exception("clara::apply()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::apply()");
 
   // check subsys is valid w.r.t dims
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw Exception("clara::apply()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::apply()");
 
   // check that gate matches the dimension of the subsys
   std::vector<idx> subsys_dims(subsys.size());
   for (idx i = 0; i < subsys.size(); ++i)
     subsys_dims[i] = dims[subsys[i]];
   if (!internal::check_dims_match_mat(subsys_dims, rA))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_MISMATCH_SUBSYS);
+    throw exception::MatrixMismatchSubsys("clara::apply()");
 
   if (internal::check_cvector(rstate)) {
     if (!internal::check_dims_match_cvect(dims, rstate))
-      throw Exception("clara::apply()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::apply()");
     return applyCTRL(rstate, rA, {}, subsys, dims);
   } else if (internal::check_square_mat(rstate)) {
     if (!internal::check_dims_match_mat(dims, rstate))
-      throw Exception("clara::apply()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::apply()");
     return applyCTRL(rstate, rA, {}, subsys, dims);
   } else
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::apply()");
 }
 
 /**
@@ -436,10 +433,10 @@ dyn_mat<typename Derived1::Scalar> apply(const Eigen::MatrixBase<Derived1>& stat
   const dyn_mat<typename Derived1::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rstate))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::apply()");
 
-  if (d == 0)
-    throw Exception("clara::apply()", Exception::Type::DIMS_INVALID);
+  if (d < 2)
+    throw exception::DimsInvalid("clara::apply()");
 
   idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
   std::vector<idx> dims(N, d);
@@ -452,19 +449,19 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks) {
   const cmat& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::apply()");
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::apply()");
   if (Ks.size() == 0)
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::apply()");
   if (!internal::check_square_mat(Ks[0]))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::apply()");
   if (Ks[0].rows() != rA.rows())
-    throw Exception("clara::apply()", Exception::Type::DIMS_MISMATCH_MATRIX);
+    throw exception::DimsMismatchMatrix("clara::apply()");
 
   for (auto&& it : Ks)
     if (it.rows() != Ks[0].rows() || it.cols() != Ks[0].rows())
-      throw Exception("clara::apply()", Exception::Type::DIMS_NOT_EQUAL);
+      throw exception::DimsNotEqual("clara::apply()");
   cmat result = cmat::Zero(rA.rows(), rA.rows());
 
 #ifdef WITH_OPENMP_
@@ -489,31 +486,31 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks,
            const std::vector<idx>& subsys, const std::vector<idx>& dims) {
   const cmat& rA = A.derived();
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+   throw exception::ZeroSize("clara::apply()");
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::apply()");
   if (!internal::check_dims(dims))
-    throw Exception("clara::apply()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::apply()");
   if (!internal::check_dims_match_mat(dims, rA))
-    throw Exception("clara::apply()", Exception::Type::DIMS_MISMATCH_MATRIX);
+    throw exception::DimsMismatchMatrix("clara::apply()");
 
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw Exception("clara::apply()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::apply()");
 
   std::vector<idx> subsys_dims(subsys.size());
   for (idx i = 0; i < subsys.size(); ++i)
     subsys_dims[i] = dims[subsys[i]];
 
   if (Ks.size() == 0)
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::apply()");
   if (!internal::check_square_mat(Ks[0]))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::apply()");
   if (!internal::check_dims_match_mat(subsys_dims, Ks[0]))
-    throw Exception("clara::apply()", Exception::Type::MATRIX_MISMATCH_SUBSYS);
+    throw exception::MatrixMismatchSubsys("clara::apply()");
 
   for (auto&& it : Ks)
     if (it.rows() != Ks[0].rows() || it.cols() != Ks[0].rows())
-      throw Exception("clara::apply()", Exception::Type::DIMS_NOT_EQUAL);
+      throw exception::DimsNotEqual("clara::apply()");
 
   cmat result = cmat::Zero(rA.rows(), rA.rows());
   for (idx i = 0; i < Ks.size(); ++i)
@@ -531,9 +528,9 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks,
            const std::vector<idx>& subsys, idx d = 2) {
   const cmat& rA = A.derived();
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::apply()", Exception::Type::ZERO_SIZE);
-  if (d == 0)
-    throw Exception("clara::apply()", Exception::Type::DIMS_INVALID);
+    throw exception::ZeroSize("clara::apply()");
+  if (d < 2)
+    throw exception::DimsInvalid("clara::apply()");
   idx N = internal::get_num_subsys(static_cast<idx>(rA.rows()), d);
   std::vector<idx> dims(N, d);
 
@@ -548,15 +545,15 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks,
  */
 inline cmat kraus2super(const std::vector<cmat>& Ks) {
   if (Ks.size() == 0)
-    throw Exception("clara::kraus2super()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::kraus2super()");
   if (!internal::check_nonzero_size(Ks[0]))
-    throw Exception("clara::kraus2super()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::kraus2super()");
   if (!internal::check_square_mat(Ks[0]))
-    throw Exception("clara::kraus2super()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("kraus2super()");
 
   for (auto&& it : Ks)
     if (it.rows() != Ks[0].rows() || it.cols() != Ks[0].rows())
-      throw Exception("clara::kraus2super()", Exception::Type::DIMS_NOT_EQUAL);
+      throw exception::DimsNotEqual("clara::kraus2super()");
 
   idx D = static_cast<idx>(Ks[0].rows());
   cmat result(D * D, D * D);
@@ -603,15 +600,15 @@ inline cmat kraus2super(const std::vector<cmat>& Ks) {
  */
 inline cmat kraus2choi(const std::vector<cmat>& Ks) {
   if (Ks.size() == 0)
-    throw Exception("clara::kraus2choi()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::kraus2choi()");
   if (!internal::check_nonzero_size(Ks[0]))
-    throw Exception("clara::kraus2choi()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::kraus2choi()");
   if (!internal::check_square_mat(Ks[0]))
-    throw Exception("clara::kraus2choi()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::kraus2choi()");
 
   for (auto&& it : Ks)
     if (it.rows() != Ks[0].rows() || it.cols() != Ks[0].rows())
-      throw Exception("clara::kraus2choi()", Exception::Type::DIMS_NOT_EQUAL);
+      throw exception::DimsNotEqual("clara::kraus2choi()");
 
   idx D = static_cast<idx>(Ks[0].rows());
 
@@ -647,12 +644,12 @@ inline cmat kraus2choi(const std::vector<cmat>& Ks) {
  */
 inline std::vector<cmat> choi2kraus(const cmat& A) {
   if (!internal::check_nonzero_size(A))
-    throw Exception("clara::choi2kraus()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::choi2kraus()");
   if (!internal::check_square_mat(A))
-    throw Exception("clara::choi2kraus()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::choi2kraus()");
   idx D = internal::get_dim_subsystem(A.rows(), 2);
   if (D * D != static_cast<idx>(A.rows()))
-    throw Exception("clara::choi2kraus()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::choi2kraus()");
 
   dmat ev = hevals(A);
   cmat evec = hevects(A);
@@ -671,13 +668,13 @@ inline std::vector<cmat> choi2kraus(const cmat& A) {
  */
 inline cmat choi2super(const cmat& A) {
   if (!internal::check_nonzero_size(A))
-    throw Exception("clara::choi2super()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::choi2super()");
   if (!internal::check_square_mat(A))
-    throw Exception("clara::choi2super()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::choi2super()");
 
   idx D = internal::get_dim_subsystem(static_cast<idx>(A.rows()), 2);
   if (D * D != static_cast<idx>(A.rows()))
-    throw Exception("clara:: choi2super()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::choi2super()");
 
   cmat result(D * D, D * D);
 
@@ -699,13 +696,13 @@ inline cmat choi2super(const cmat& A) {
  */
 inline cmat super2choi(const cmat& A) {
   if (!internal::check_nonzero_size(A))
-    throw Exception("clara::super2choi()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::super2choi()");
   if (!internal::check_square_mat(A))
-    throw Exception("clara::super2choi()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::super2choi()");
   idx D = internal::get_dim_subsystem(static_cast<idx>(A.rows()), 2);
 
   if (D * D != static_cast<idx>(A.rows()))
-    throw Exception("clara::super2choi()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::super2choi()");
 
   cmat result(D * D, D * D);
 
@@ -732,22 +729,22 @@ dyn_mat<typename Derived::Scalar> ptrace1(const Eigen::MatrixBase<Derived>& A,
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptrace1()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptrace1()");
   // check that dims is a vlid dimension vector
   if (!internal::check_dims(dims))
-    throw Exception("clara::ptrace1()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptrace1()");
   // check dims has only 2 elements
   if (dims.size() != 2)
-    throw Exception("clara::ptrace1()", Exception::Type::NOT_BIPARTITE);
+    throw exception::NotBipartite("clara::ptrace1()");
   idx DA = dims[0];
   idx DB = dims[1];
   dyn_mat<typename Derived::Scalar> result = dyn_mat<typename Derived::Scalar>::Zero(DB, DB);
 
   if (internal::check_cvector(rA)) {
     if (!internal::check_dims_match_cvect(dims, rA))
-      throw Exception("clara::ptrace1()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::ptrace1()");
 
-    auto worker = [=](idx i, idx j) noexcept -> typename Derived::Scalar {
+    auto worker = [&](idx i, idx j) noexcept -> typename Derived::Scalar {
       typename Derived::Scalar sum = 0;
       for (idx m = 0; m < DA; ++m)
         sum += rA(m * DB + i) * std::conj(rA(m * DB + j));
@@ -762,7 +759,7 @@ dyn_mat<typename Derived::Scalar> ptrace1(const Eigen::MatrixBase<Derived>& A,
     return result;
   } else if (internal::check_square_mat(rA)) {
     if (!internal::check_dims_match_mat(dims, rA))
-      throw Exception("clara::ptrace1()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::ptrace1()");
     auto worker = [=](idx i, idx j) noexcept -> typename Derived::Scalar {
       typename Derived::Scalar sum = 0;
       for (idx m = 0; m < DA; ++m)
@@ -777,7 +774,7 @@ dyn_mat<typename Derived::Scalar> ptrace1(const Eigen::MatrixBase<Derived>& A,
         result(i, j) = worker(i, j);
     return result;
   } else
-    throw Exception("clara::ptrace1()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::ptrace1()");
 }
 
 /**
@@ -791,9 +788,9 @@ dyn_mat<typename Derived::Scalar> ptrace1(const Eigen::MatrixBase<Derived>& A, i
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
   // check zero size
   if (!internal::check_nonzero_size(A))
-    throw Exception("clara::ptrace1()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptrace1()");
   if (d == 0)
-    throw Exception("clara::ptrace1()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptrace1()");
 
   // local dimanesion vector
   std::vector<idx> dims(2, d);
@@ -811,13 +808,13 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A,
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptrace2()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptrace2()");
   // check that dims is valid dimension vector
   if (!internal::check_dims(dims))
-    throw Exception("clara::ptrace2()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptrace2()");
   // check dims has only 2 elements
   if (dims.size() != 2)
-    throw Exception("clara::ptrace2()", Exception::Type::NOT_BIPARTITE);
+    throw exception::NotBipartite("clara::ptrace2()");
   idx DA = dims[0];
   idx DB = dims[1];
 
@@ -825,7 +822,8 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A,
 
   if (!internal::check_cvector(rA)) {
     if (!internal::check_dims_match_cvect(dims, rA))
-      throw Exception("clara::ptrace2()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::ptrace2()");
+
     auto worker = [=](idx i, idx j) noexcept -> typename Derived::Scalar {
       typename Derived::Scalar sum = 0;
       for (idx m = 0; m < DB; ++m)
@@ -841,7 +839,7 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A,
     return result;
   } else if (internal::check_square_mat(rA)) {
     if (!internal::check_dims_match_mat(dims, rA))
-      throw Exception("clara::ptrace2()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::ptrace2()");
 
 #ifdef WITH_OPENMP_
 #pragma omp parallel for collapse(2)
@@ -851,7 +849,7 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A,
         result(i, j) = trace(rA.block(i * DB, j * DB, DB, DB));
     return result;
   } else
-    throw Exception("clara::ptrace1()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::ptrace1()");
 }
 
 /**
@@ -866,9 +864,9 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A, i
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(A))
-    throw Exception("clara::ptrace2()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptrace2()");
   if (d == 0)
-    throw Exception("clara::ptrace2()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptrace2()");
   std::vector<idx> dims(2, d);
   return ptrace2(A, dims);
 }
@@ -887,15 +885,15 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptrace()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptrace()");
 
   // check that dims is a vlid dimension vector
   if (!internal::check_dims(dims))
-    throw Exception("clara::ptrace()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptrace()");
 
   // check that subsys are valid
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw Exception("clara::ptrace()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::ptrace()");
 
   idx D = static_cast<idx>(rA.rows());
   idx N = dims.size();
@@ -933,7 +931,7 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
 
   if (internal::check_cvector(rA)) {
     if (!internal::check_dims_match_cvect(dims, rA))
-      throw Exception("clara::ptrace()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::ptrace()");
     if (subsys.size() == dims.size()) {
       result(0, 0) = (adjoint(rA) * rA).value();
       return result;
@@ -979,7 +977,7 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
     return result;
   } else if (internal::check_square_mat(rA)) {
     if (!internal::check_dims_match_mat(dims, rA))
-      throw Exception("clara::ptrace()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::ptrace()");
 
     if (subsys.size() == dims.size()) {
       result(0, 0) = rA.trace();
@@ -1021,7 +1019,7 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
     }
     return result;
   } else
-    throw Exception("clara::ptrace()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::ptrace()");
 }
 
 /**
@@ -1037,9 +1035,9 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptrace()", Exception::Type::ZERO_SIZE);
-  if (d == 0)
-    throw Exception("clara::ptrace()", Exception::Type::DIMS_INVALID);
+    throw exception::ZeroSize("clara::ptrace()");
+  if (d < 2)
+    throw exception::DimsInvalid("clara::ptrace()");
   idx N = internal::get_num_subsys(static_cast<idx>(rA.rows()), d);
   std::vector<idx> dims(N, d);
   return ptrace(rA, subsys, dims);
@@ -1058,11 +1056,11 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
                                              const std::vector<idx>& dims) {
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptranspose()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptranspose()");
   if (!internal::check_dims(dims))
-    throw Exception("clara::ptranspose()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::ptranspose()");
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw Exception("clara::ptranspose()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::ptranspose()");
 
   idx D = static_cast<idx>(rA.rows());
   idx N = dims.size();
@@ -1080,7 +1078,7 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
 
   if (internal::check_cvector(rA)) {
     if (!internal::check_dims_match_cvect(dims, rA))
-      throw Exception("clara::ptranspose()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::ptranspose()");
     if (subsys.size() == dims.size())
       return (rA * adjoint(rA)).transpose();
 
@@ -1111,11 +1109,11 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
     return result;
   } else if (internal::check_square_mat(rA)) {
     if (!internal::check_dims_match_mat(dims, rA))
-      throw Exception("clara::ptranspose()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchCvector("clara::ptranspose()");
     if (subsys.size() == dims.size())
-      return rA.transpose();
+      return (rA * adjoiint(rA)).transpose();
     if (subsys.size() == 0)
-      return rA;
+      return rA * adjoint(rA);
 
     auto worker = [=, &Cmidxcol](idx i) noexcept -> typename Derived::Scalar {
       idx midxcoltmp[maxn];
@@ -1144,7 +1142,7 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
     }
     return result;
   } else
-    throw Exception("clara::transpose()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::ptranspose()");
 }
 
 /**
@@ -1159,10 +1157,10 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
                                              const std::vector<idx>& subsys, idx d = 2) {
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::ptranspose()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::ptranspose()");
 
-  if (d == 0)
-    throw Exception("clara::ptranspose()", Exception::Type::DIMS_INVALID);
+  if (d < 2)
+    throw exception::DimsInvalid("clara::ptranspose()");
 
   idx N = internal::get_num_subsys(static_cast<idx>(rA.rows()), d);
   std::vector<idx> dims(N, d);
@@ -1182,16 +1180,16 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::syspermute()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::syspermute()");
   // check that dims is a vlid dimension vector
   if (!internal::check_dims(dims))
-    throw Exception("clara::syspermute()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::syspermute()");
   // check that we a valid permutation
   if (!internal::check_perm(perm))
-    throw Exception("clara::syspermute()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::syspermute()");
   // check that permutation match dimension
   if (perm.size() != dims.size())
-    throw Exception("clara::syspermute()", Exception::Type::PERM_MISMATCH_DIMS);
+    throw exception::PermMismatchDims("clara::syspermute()");
 
   idx D = static_cast<idx>(rA.rows());
   idx N = dims.size();
@@ -1204,7 +1202,7 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
 
     // check dims match of the dimension rA
     if (!internal::check_dims_match_cvect(dims, rA))
-      throw Exception("clara::syspermute()", Exception::Type::DIMS_MISMATCH_CVECTOR);
+      throw exception::DimsMismatchCvector("clara::syspermute()");
 
     // copy dims in Cdims and perm in Cperm
     for (idx i = 0; i < N; ++i) {
@@ -1242,7 +1240,7 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
 
     // check that dims match the dimnesion of rA
     if (!internal::check_dims_match_mat(dims, rA))
-      throw Exception("clara::syspermute()", Exception::Type::DIMS_MISMATCH_MATRIX);
+      throw exception::DimsMismatchMatrix("clara::syspermute()");
     for (idx i = 0; i < N; ++i) {
       Cdims[i] = dims[i];
       Cdims[i + N] = dims[i];
@@ -1278,7 +1276,7 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
       result(worker(i)) = rA(i);
     return reshape(result, D, D);
   } else
-    throw Exception("clara::syspermute()", Exception::Type::MATRIX_NOT_SQUARE_OR_CVECTOR);
+    throw exception::MatrixNotSquareNotCvector("clara::syspermute()");
 }
 
 /**
@@ -1293,11 +1291,11 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
   const typename Eigen::MatrixBase<Derived>::EvalReturnType& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::syspermute()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::syspermute()");
 
   // check valid dims
-  if (d == 0)
-    throw Exception("clara::syspermute()", Exception::Type::DIMS_INVALID);
+  if (d < 2)
+    throw exception::DimsInvalid("clara::syspermute()");
 
   idx N = internal::get_num_subsys(static_cast<idx>(rA.rows()), d);
   std::vector<idx> dims(N, d);

@@ -18,7 +18,7 @@ namespace clara {
  */
 inline std::vector<double> uniform(idx N) {
   if (N == 0)
-    throw Exception("clara::uniform", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::uniform()");
   return std::vector<double>(N, 1. / N);
 }
 
@@ -29,7 +29,7 @@ inline std::vector<double> uniform(idx N) {
  */
 inline std::vector<double> marginalX(const dmat& probXY) {
   if (!internal::check_nonzero_size(probXY))
-    throw Exception("clara::marginalX", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::marginalX()");
 
   std::vector<double> result(probXY.rows(), 0);
   for (idx i = 0; i < static_cast<idx>(probXY.rows()); ++i) {
@@ -48,7 +48,7 @@ inline std::vector<double> marginalX(const dmat& probXY) {
  */
 inline std::vector<double> marginalY(const dmat& probXY) {
   if (!internal::check_nonzero_size(probXY))
-    throw Exception("clara::marginalY", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::marginalY()");
   return marginalX(probXY.transpose());
 }
 
@@ -62,9 +62,9 @@ template <typename Container>
 double avg(const std::vector<double>& prob, const Container& X,
            typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::avg", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::avg()");
   if (!internal::check_matching_sizes(prob, X))
-    throw Exception("clara::avg", Exception::Type::SIZE_MISMATCH);
+    throw exception::SizeMismatch("clara::avg()");
 
   double result = 0;
   for (idx i = 0; i < prob.size(); ++i)
@@ -84,9 +84,9 @@ template <typename Container>
 double cov(const dmat& probXY, const Container& X, const Container& Y,
            typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
   if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y))
-    throw Exception("clara::cov", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::cov()");
   if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size())
-    throw Exception("clara::cov", Exception::Type::SIZE_MISMATCH);
+    throw exception::SizeMismatch("clara::cov()");
   std::vector<double> probX = marginalX(probXY);
   std::vector<double> probY = marginalY(probXY);
 
@@ -103,9 +103,9 @@ template <typename Container>
 double var(const std::vector<double>& prob, const Container& X,
            typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::var", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::var()");
   if (!internal::check_matching_sizes(prob, X))
-    throw Exception("clara::var", Exception::Type::SIZE_MISMATCH);
+    throw exception::SizeMismatch("clara::var()");
   Eigen::VectorXcd diag(prob.size());
   for (idx i = 0; i < prob.size(); ++i)
     diag(i) = prob[i];
@@ -117,9 +117,9 @@ template <typename Container>
 double sigma(const std::vector<double>& prob, const Container& X,
              typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::sigma", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::sigma()");
   if (!internal::check_matching_sizes(prob, X))
-    throw Exception("clara::sigma", Exception::Type::SIZE_MISMATCH);
+    throw exception::SizeMismatch("clara::sigma()");
   return std::sqrt(var(prob, X));
 }
 
@@ -127,9 +127,9 @@ template <typename Container>
 double cor(const dmat& probXY, const Container& X, const Container& Y,
            typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
   if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y))
-    throw Exception("clara::cor", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::cor()");
   if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size())
-    throw Exception("clara::cor", Exception::Type::SIZE_MISMATCH);
+    throw exception::SizeMismatch("clara::cor()");
   return cov(probXY, X, Y) / (sigma(marginalX(probXY), X) * sigma(marginalX(probXY), Y));
 }
 

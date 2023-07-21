@@ -46,7 +46,7 @@ class Codes final : public internal::Singleton<const Codes> {
                      4.;
             break;
           default:
-            throw Exception("clara::Codes::codeword()", Exception::Type::NO_CODEWORD);
+            throw exception::NoCodeword("clara::Codes::codeword()");
         }
         break;
       case Type::SEVEN_QUBIT_STEANE:
@@ -66,7 +66,7 @@ class Codes final : public internal::Singleton<const Codes> {
                      std::sqrt(8.);
             break;
           default:
-            throw Exception("clara::Codes::codeword()", Exception::Type::NO_CODEWORD);
+            throw exception::NoCodeword("clara::Codes::codeword()");
         }
         break;
       case Type::NINE_QUBIT_SHOR:
@@ -89,7 +89,7 @@ class Codes final : public internal::Singleton<const Codes> {
             result = kron(shorb, kron(shorb, shorb)) / std::sqrt(8.);
             break;
           default:
-            throw Exception("clara::Codes::codeword()", Exception::Type::NO_CODEWORD);
+            throw exception::NoCodeword("clara::Codes::codeword()");
         }
     }
     return result;

@@ -56,7 +56,7 @@ void save(const Eigen::MatrixBase<Derived>& A, const std::string& fname) {
 
   // check zero size
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::save()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::save()");
   std::fstream fout;
   fout.open(fname, std::ios::out | std::ios::binary);
 

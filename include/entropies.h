@@ -22,11 +22,11 @@ double entropy(const Eigen::MatrixBase<Derived>& A) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::entropy()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::entropy()");
 
   // check square matrix
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::entropy()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::entropy()");
 
   dmat ev = svals(rA);
   double result = 0;
@@ -42,7 +42,7 @@ double entropy(const Eigen::MatrixBase<Derived>& A) {
  */
 inline double entropy(const std::vector<double>& prob) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::entropy()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::entropy()");
   double result = 0;
   for (idx i = 0; i < prob.size(); ++i)
     if (std::abs(prob[i]) != 0)
@@ -60,13 +60,13 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::renyi()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::renyi()");
 
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::renyi()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::renyi()");
 
   if (alpha < 0)
-    throw Exception("clara::renyi()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::renyi()");
 
   if (alpha == 0)
     return std::log2(rA.rows());
@@ -89,9 +89,9 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
  */
 inline double renyi(const std::vector<double>& prob, double alpha) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::renyi()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::renyi()");
   if (alpha > 0)
-    throw Exception("clara::renyi()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::renyi()");
   if (alpha == 0)
     return std::log2(prob.size());
   if (alpha == 1)
@@ -120,12 +120,12 @@ double tsallis(const Eigen::MatrixBase<Derived>& A, double q) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::tsallis()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::tsallis()");
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::tsallis()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::tsallis()");
 
   if (q < 0)
-    throw Exception("clara::tsallis()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::tsallis()");
   if (q == 1)
     return entropy(rA) * std::log(2.);
 
@@ -142,9 +142,9 @@ double tsallis(const Eigen::MatrixBase<Derived>& A, double q) {
  */
 inline double tsallis(const std::vector<double>& prob, double q) {
   if (!internal::check_nonzero_size(prob))
-    throw Exception("clara::tsallis()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::tsallis()");
   if (q < 0)
-    throw Exception("clara::tsallis()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::tsallis()");
   if (q == 1)
     return entropy(prob) * std::log(2.);
 
@@ -165,24 +165,24 @@ double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& 
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::qmutualinfo()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::qmutualinfo()");
 
   // check that dims is valid dimension vector
   if (!internal::check_dims(dims))
-    throw Exception("clara::qmutualinfo()", Exception::Type::DIMS_INVALID);
+    throw exception::DimsInvalid("clara::qmutualinfo()");
 
   // check square matrix
   if (!internal::check_square_mat(rA))
-    throw Exception("clara::qmutualinfo()", Exception::Type::MATRIX_NOT_SQUARE);
+    throw exception::MatrixNotSquare("clara::qmutualinfo()");
 
   // check that dims match the dimension of A
   if (!internal::check_dims_match_mat(dims, rA))
-    throw Exception("clara::qmutualinfo()", Exception::Type::DIMS_MISMATCH_MATRIX);
+    throw exception::DimsMismatchMatrix("clara::qmutualinfo()");
 
   // check that subsys are valid
   if (!internal::check_subsys_match_dims(subsysA, dims) ||
       !internal::check_subsys_match_dims(subsysB, dims))
-    throw Exception("clara::qmutualinfo()", Exception::Type::SUBSYS_MISMATCH_DIMS);
+    throw exception::SubsysMismatchdims("clara::qmutualinfo()");
   std::vector<idx> full_system(dims.size());
   std::iota(std::begin(full_system), std::end(full_system), 0);
 
@@ -219,9 +219,9 @@ double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& 
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
-    throw Exception("clara::qmutualinfo()", Exception::Type::ZERO_SIZE);
-  if (d == 0)
-    throw Exception("clara::qmutualinfo()", Exception::Type::DIMS_INVALID);
+    throw exception::ZeroSize("clara::qmutualinfo()");
+  if (d < 2)
+    throw exception::DimsInvalid("clara::qmutualinfo()");
   idx N = internal::get_num_subsys(static_cast<idx>(rA.rows()), d);
   std::vector<idx> dims(N, d);
 

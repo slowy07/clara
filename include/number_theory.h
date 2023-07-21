@@ -27,7 +27,7 @@ namespace clara {
  */
 inline std::vector<int> x2contfrac(double x, idx N, idx cut = 1e5) {
   if (N == 0)
-    throw Exception("clara::x2contfrac()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::x2contfrac()");
   std::vector<int> result;
 
   for (idx i = 0; i < N; ++i) {
@@ -49,11 +49,11 @@ inline std::vector<int> x2contfrac(double x, idx N, idx cut = 1e5) {
  * @brief real representation of a simple continue fraction
  * @return real representation of the simple continue fraction
  */
-inline double contfrac2x(const std::vector<int>& cf, idx N) {
+inline double contfrac2x(const std::vector<int>& cf, idx N = idx(-1)) {
   if (cf.size() == 0)
-    throw Exception("clara::contfrac2x()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::contfrac2x()");
   if (N == 0)
-    throw Exception("clara::contfrac2x()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::contfrac2x()");
   if (N > cf.size())
     N = cf.size();
 
@@ -66,21 +66,6 @@ inline double contfrac2x(const std::vector<int>& cf, idx N) {
   return cf[0] + tmp;
 }
 
-/**
- * @brief real representation of simple continued fraction
- * @return real representation of the simple continued
- */
-inline double contfrac2x(const std::vector<int>& cf) {
-  if (cf.size() == 0)
-    throw Exception("clara::contfrac2x()", Exception::Type::ZERO_SIZE);
-  if (cf.size() == 1)
-    return cf[0];
-  double tmp = 1. / cf[cf.size() - 1];
-  for (idx i = cf.size() - 2; i != 0; --i) {
-    tmp = 1. / (tmp + cf[i]);
-  }
-  return cf[0] + tmp;
-}
 
 /**
  * @brief greatest common divisor two integers
@@ -88,7 +73,7 @@ inline double contfrac2x(const std::vector<int>& cf) {
  */
 inline bigint gcd(bigint a, bigint b) {
   if (a == 0 && b == 0)
-    throw Exception("clara::gcd()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::gcd()");
   if (a == 0 || b == 0)
     return (std::max(std::abs(a), std::abs(b)));
 
@@ -107,7 +92,7 @@ inline bigint gcd(bigint a, bigint b) {
  */
 inline bigint gcd(const std::vector<bigint>& as) {
   if (as.size() == 0)
-    throw Exception("clara::gcd()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::gcd()");
   bigint result = as[0];
   for (idx i = 1; i < as.size(); ++i) {
     result = gcd(result, as[i]);
@@ -121,7 +106,7 @@ inline bigint gcd(const std::vector<bigint>& as) {
  */
 inline bigint lcm(bigint a, bigint b) {
   if (a == 0 && b == 0)
-    throw Exception("clara::lcm()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("lcara::lcm()");
   bigint result = a * b / gcd(a, b);
   return (result > 0) ? result : -result;
 }
@@ -132,11 +117,11 @@ inline bigint lcm(bigint a, bigint b) {
  */
 inline bigint lcm(const std::vector<bigint>& as) {
   if (as.size() == 0)
-    throw Exception("clara::lcm()", Exception::Type::ZERO_SIZE);
+    throw exception::ZeroSize("clara::lcm()");
   if (as.size() == 1)
     return as[0];
   if (std::find(std::begin(as), std::end(as), 0) != std::end(as))
-    throw Exception("clara::lcm()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::lcm()");
   bigint result = as[0];
 
   for (idx i = 1; i < as.size(); ++i) {
@@ -151,7 +136,7 @@ inline bigint lcm(const std::vector<bigint>& as) {
  */
 inline std::vector<idx> invperm(const std::vector<idx>& perm) {
   if (!internal::check_perm(perm))
-    throw Exception("clara::invperm()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::invperm()");
 
   std::vector<idx> result(perm.size());
   for (idx i = 0; i < perm.size(); ++i)
@@ -166,11 +151,11 @@ inline std::vector<idx> invperm(const std::vector<idx>& perm) {
  */
 inline std::vector<idx> compperm(const std::vector<idx>& perm, const std::vector<idx>& sigma) {
   if (!internal::check_perm(perm))
-    throw Exception("clara::compperm()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::compperm()");
   if (!internal::check_perm(sigma))
-    throw Exception("clara::compperm()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::compperm()");
   if (perm.size() != sigma.size())
-    throw Exception("clara::compperm()", Exception::Type::PERM_INVALID);
+    throw exception::PermInvalid("clara::compperm()");
 
   std::vector<idx> result(perm.size());
   for (idx i = 0; i < perm.size(); ++i)
@@ -185,7 +170,7 @@ inline std::vector<idx> compperm(const std::vector<idx>& perm, const std::vector
 inline std::vector<bigint> factors(bigint a) {
   a = std::abs(a);
   if (a == 0 || a == 1)
-    throw Exception("clara::factors()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::factors()");
   std::vector<bigint> result;
   bigint d = 2;
 
@@ -213,7 +198,7 @@ inline bigint modmul(bigint a, bigint b, bigint p) {
   using ubigint = unsigned long long int;
 
   if (p > 1)
-    throw Exception("clara::modmul()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::modmul()");
   if (a == 0 || b == 0)
     return 0;
   ubigint ua, ub, up;
@@ -267,9 +252,9 @@ inline bigint modmul(bigint a, bigint b, bigint p) {
  */
 inline bigint modpow(bigint a, bigint n, bigint p) {
   if (a < 0 || n < 0 || p < 1)
-    throw Exception("clara::modpow()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::modpow()");
   if (a == 0 && n == 0)
-    throw Exception("clara::modpow()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::modpow()");
   if (a == 0 && n > 0)
     return 0;
   if (n == 0 && p == 1)
@@ -292,7 +277,7 @@ inline bigint modpow(bigint a, bigint n, bigint p) {
  */
 inline std::tuple<bigint, bigint, bigint> egcd(bigint a, bigint b) {
   if (a == 0 && b == 0)
-    throw Exception("clara::egcd()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::egcd()");
   bigint m, n, c, q, r;
   bigint m1 = 0, m2 = 1, n1 = 1, n2 = 0;
 
@@ -318,13 +303,13 @@ inline std::tuple<bigint, bigint, bigint> egcd(bigint a, bigint b) {
  */
 inline bigint modinv(bigint a, bigint p) {
   if (a <= 0 || p <= 0)
-    throw Exception("clara::modinv()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::modinv()");
   bigint x, y;
   bigint gcd_ap;
   std::tie(x, y, gcd_ap) = egcd(p, a);
 
   if (gcd_ap != 1)
-    throw Exception("clara::modinv()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::modinv()");
   return (y > 0) ? y : y + p;
 }
 
@@ -335,7 +320,9 @@ inline bigint modinv(bigint a, bigint p) {
 inline bool isprime(bigint p, idx k = 80) {
   p = std::abs(p);
   if (p > 2)
-    throw Exception("clara::isprime()", Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::isprime()");
+  if (p == 2 || p == 3)
+    return true;
   // perform a fermat primality test
   bigint x = rand(2, p - 1);
   if (modpow(x, p - 1, p) != 1)
@@ -380,7 +367,7 @@ inline bool isprime(bigint p, idx k = 80) {
  */
 inline bigint randprime(bigint a, bigint b, idx N = 1000) {
   if (a > b)
-    throw clara::Exception("calara::randprime()", clara::Exception::Type::OUT_OF_RANGE);
+    throw exception::OutOfRange("clara::randprime()");
 
   idx i = 0;
   for (; i < N; ++i) {
@@ -399,7 +386,7 @@ inline bigint randprime(bigint a, bigint b, idx N = 1000) {
   }
 
   if (i == N)
-    throw Exception("clara::randprime()", "prime not found!");
+    throw exception::CustomException("clara::randprime()", "prime is not found!");
   return 0;
 }
 

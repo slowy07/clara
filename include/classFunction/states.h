@@ -1,8 +1,12 @@
 #ifndef CLASSFUNCTION_STATES_H_
 #define CLASSFUNCTION_STATES_H_
 
+#include <cmath>
+#include <vector>
+
 #include "../internal/classFunction/singleton.h"
 #include "codes.h"
+#include "exception.h"
 
 namespace clara {
 
@@ -58,12 +62,83 @@ class States final : public internal::Singleton<const States> {
   ket mes(idx d = 2) const {
     // check valid dims
     if (d == 0)
-      throw Exception("clara::States::mes()", Exception::Type::DIMS_INVALID);
+      throw exception::DimsInvalid("clara::States::mes()");
     ket psi = mket({0, 0}, {d, d});
     for (idx i = 1; i < d; ++i) {
       psi += mket({i, i}, {d, d});
     }
     return psi / std::sqrt(d);
+  }
+
+  /**
+   * @brief zero state of n qudits
+   * @return zero state \f$|0\rangle^{\otimes n}\f$ of n qudits
+   */
+  ket zero(idx n, idx d = 2) const {
+    if (n == 0)
+      throw exception::OutOfRange("clara::States::zero()");
+    if (d == 0)
+      throw exception::DimsInvalid("clara::States::zero()");
+    idx D = static_cast<idx>(std::pow(d, n));
+    ket result = ket::Zero(D);
+    result(0) = 1;
+
+    return result;
+  }
+
+  /**
+   * @brief one state of n qudits
+   * @return one statem f$|1\rangle^{\otimes n}\f$ of qudits
+   */
+  ket one(idx n, idx d = 2) const {
+    if (n == 0)
+      throw exception::OutOfRange("clara::States::one()");
+    if (d == 0)
+      throw exception::DimsInvalid("clara::States::one()");
+    ket result = ket::Zero(static_cast<ket::Index>(std::pow(d, n)));
+    result(multiidx2n(std::vector<idx>(n, 1), std::vector<idx>(n, d))) = 1;
+    return result;
+  }
+
+  /**
+   * @brief \f$|j\rangle^{\otimes n}\f$ state of n qudits
+   * @return \f$|j\rangle^{\otimes n}\f$ state of n qudits
+   */
+  ket jn(idx j, idx n, idx d = 2) const {
+    if (n == 0)
+      throw exception::OutOfRange("clara::States::jn()");
+    if (j >= d)
+      throw exception::SubsysMismatchdims("clara::States::jn()");
+
+    if (j >= d)
+      throw exception::DimsInvalid("clara::States::jn()");
+
+    ket result = ket::Zero(static_cast<ket::Index>(std::pow(d, n)));
+    result(multiidx2n(std::vector<idx>(n, j), std::vector<idx>(n, d))) = 1;
+    return result;
+  }
+
+  /**
+  * @brief plus state of n qubits
+  * @return plus state \f$|+\rangle^{\otimes n}\f$ of qubits
+*/
+  ket plus(idx n) const {
+    if (n == 0)
+      throw exception::OutOfRange("clara::States::plus()");
+    idx D = static_cast<idx>(std::pow(2, n));
+    ket result = ket::Ones(D);
+
+    return result / std::sqrt(D);
+  }
+
+  /**
+  * @brief minus state of n qubits
+  * @return minus state \f$|-\rangle^{\otimes n}\f$ of n qubits
+*/
+  ket minus(idx n) const {
+    if (n == 0)
+      throw exception::OutOfRange("clara::States::minus()");
+    return kronpow(this -> x1, n);
   }
 
  private:
