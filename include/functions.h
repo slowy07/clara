@@ -1078,7 +1078,7 @@ ket operator"" _ket() {
 template <char... Bits>
 bra operator"" _bra() {
   constexpr idx n = sizeof...(Bits);
-  constexpr char bits[n + 1] = {Bits..., "\0"};
+  constexpr char bits[n + 1] = {Bits..., '\0'};
   clara::bra q = clara::ket::Zero(std::pow(2, n));
   idx pos = 2;
 
