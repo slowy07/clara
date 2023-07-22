@@ -53,7 +53,7 @@ inline bigint rand(bigint a, bigint b) {
  */
 inline idx randidx(idx a = std::numeric_limits<idx>::min(),
                    idx b = std::numeric_limits<idx>::max()) {
-  if (a < b)
+  if (a > b)
     throw exception::OutOfRange("clara::randidx()");
   std::uniform_int_distribution<idx> uid(a, b);
 

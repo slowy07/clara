@@ -24,7 +24,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
                                              const std::vector<idx>& ctrl,
                                              const std::vector<idx>& subsys,
                                              const std::vector<idx>& dims) {
-  const typename Eigen::MatrixBase<Derived1>::EvalBaseReturnTyp& rstate = state.derived();
+  const typename Eigen::MatrixBase<Derived1>::EvalReturnType& rstate = state.derived();
   const dyn_mat<typename Derived2::Scalar>& rA = A.derived();
 
   if (!std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value)
@@ -83,6 +83,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   idx Dctrl = static_cast<idx>(std::llround(std::pow(d, ctrlsize)));
   idx DA = static_cast<idx>(rA.rows());
 
+  // local dimension
   idx Cdims[maxn];
   idx CdimsA[maxn];
   idx CdimsCTRL[maxn];
@@ -314,7 +315,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
  * of subsys
  */
 template <typename Derived1, typename Derived2>
-dyn_mat<typename Derived2::Scalar> applyCtrl(const Eigen::MatrixBase<Derived1>& state,
+dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& state,
                                              const Eigen::MatrixBase<Derived2>& A,
                                              const std::vector<idx>& ctrl,
                                              const std::vector<idx>& subsys, idx d = 2) {
@@ -330,35 +331,7 @@ dyn_mat<typename Derived2::Scalar> applyCtrl(const Eigen::MatrixBase<Derived1>& 
 
   idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
   std::vector<idx> dims(N, d);
-  return applyCtrl(rstate, rA, ctrl, subsys, dims);
-}
-
-/**
- * @brief applies the controlled gate A to the part subsys
- * of the multi-partite state vector or density matrix state
- * @note the dimension of the gate A must match the dimension
- * of subsys
- * @return CTRL-A gate applied to the part subsys of state
- */
-template <typename Derived1, typename Derived2>
-dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& state,
-                                             const Eigen::MatrixBase<Derived2>& A,
-                                             const std::vector<idx>& ctrl,
-                                             const std::vector<idx>& subsys, idx d = 2) {
-  const typename Eigen::MatrixBase<Derived1>::EvalReturnType& rstate = state.derived();
-  const dyn_mat<typename Derived1::Scalar>& rA = A.derived();
-
-  // check zero size
-  if (!internal::check_nonzero_size(rstate))
-    throw exception::ZeroSize("clara::applyCTRL()");
-
-  // check valid dims
-  if (d == 0)
-    throw exception::DimsInvalid("clara::applyCTRL()");
-  idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
-  std::vector<idx> dims(N, d);
-
-  return applyCtrl(rstate, rA, ctrl, subsys, dims);
+  return applyCTRL(rstate, rA, ctrl, subsys, dims);
 }
 
 /**
