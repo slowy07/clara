@@ -1,5 +1,7 @@
 ![clara-image](.github/clara.png)
 
+![Clara ubuntu test](https://img.shields.io/github/actions/workflow/status/slowy07/clara/cpp-testing.yml?style=flat-square&logo=github&label=Clara%20Ubuntu%20Test)
+
 Quantum computing is a type of computing that harnesses the power of quantum mechanics to solve problems that are too difficult for classical computers. Quantum computers use qubits, which are quantum bits, to store information. Qubits can be in a superposition of states, which means that they can be both 0 and 1 at the same time. This allows quantum computers to perform calculations that are exponentially faster than classical computers.
 
 Clara are open sourec library for quantum computing processing that is designed to be faster on classical computer. the library provides a high-level interface for writing quantum algorithm and it uses a variety of techniques to optimize the performance of these algorithm on classical computer. the lib has the potential to make quantum algorithm more accessible to a wider range of researcher and developers and could help to accelerate the develompent of quantum computing applications

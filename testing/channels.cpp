@@ -7,7 +7,20 @@
 
 using namespace clara;
 
+/**
+ * @brief channels clara
+ * perform various quantum channel oeprations
+ * such as computing choi matrices,
+ * kraus operator, and superoperator matricesa and
+ * and verifies the correctness of these operations
+ * by comparing the outpu states
+ */
+
 int main() {
+  /**
+   * initializes the variables `nk` and `D`, which represent the number
+   * of kraus operatos and the dimension of the quantum space
+   */
   idx nk = 5;
   idx D = 3;
 
