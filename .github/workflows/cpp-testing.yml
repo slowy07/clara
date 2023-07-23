@@ -49,7 +49,7 @@ jobs:
       - name: install eigen
         run: brew install eigen
         
-      - run: build and test
+      - name: build and test
         run: |
           echo "check g++ version"
           g++ --version
