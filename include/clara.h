@@ -14,8 +14,6 @@
 #include <complex>
 #include <cstdlib>
 #include <cstring>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/SVD>
 #include <exception>
 #include <fstream>
 #include <functional>

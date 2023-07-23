@@ -19,7 +19,15 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install Eigen
-        run: sudo apt-get install libeigen3-dev
+        run: | 
+          sudo apt-get install libeigen3-dev
+          git clone https://gitlab.com/libeigen/eigen
+          cd eigen
+          mkdir build_dir
+          cd build_dir
+          sudo cmake ..
+          sudo make install
+          sudo cp -r /usr/local/include/eigen3/Eigen -r /usr/local/include
 
       - name: Build and test
         run: |
