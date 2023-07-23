@@ -36,8 +36,8 @@
 #include <utility>
 #include <vector>
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/SVD>
+#include <Eigen/Dense>
+#include <Eigen/SVD>
 
 // inter dependicies
 #include "classFunction/codes.h"
