@@ -51,9 +51,9 @@ jobs:
       - name: install eigen
         run: |
           brew install eigen
-          ls /usr/local/include
           mkdir -p /usr/local/include/
-          sudo cp -r /usr/local/include/eigen3/Eigen /usr/local/include
+          ls /usr/local/include/eigen3/Eigen
+          sudo ln -s /usr/local/include/eigen3/Eigen /usr/local/include
         
       - name: build and test
         run: |
