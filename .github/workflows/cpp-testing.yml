@@ -21,14 +21,7 @@ jobs:
       - name: Install Eigen
         run: | 
           sudo apt-get install libeigen3-dev
-          git clone https://gitlab.com/libeigen/eigen
-          cd eigen
-          mkdir build_dir
-          cd build_dir
-          sudo cmake ..
-          sudo make install
-          sudo cp -r /usr/local/include/eigen3/Eigen -r /usr/local/include
-
+ 
       - name: Build and test
         run: |
           echo "check g++ version"
@@ -55,7 +48,11 @@ jobs:
         uses: actions/checkout@v3
       
       - name: install eigen
-        run: brew install eigen
+        run: |
+          brew install eigen
+          ls /usr/local/include
+          mkdir -p /usr/local/include/
+          sudo ln -s /usr/local/include/3.4.0_1/include/eigen3 /usr/local/include/eigen3
         
       - name: build and test
         run: |
