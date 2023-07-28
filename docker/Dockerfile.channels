@@ -1,0 +1,18 @@
+# CALL BASE IMAGE WITH UBUNTU 18.04
+FROM ubuntu:18.04
+
+# COPY FILE TO LOCAL CONTAINER
+WORKDIR /app
+COPY . .
+
+# INSTALL MODULE
+RUN apt-get update && apt install libeigen3-dev libomp-dev gcc -y
+WORKDIR /usr/local/include
+RUN cp -r /usr/include/eigen3/Eigen .
+
+# BUILD BINARY FILE
+WORKDIR /app
+RUN g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $HOME/eigen -I $HOME/clara/include testing/channels.cpp -o channels
+
+# RUNNING BINARY FILE
+ENTRYPOINT ["./channels"]
