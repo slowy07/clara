@@ -73,6 +73,11 @@ Clara using [GoogleTest](https://github.com/google/googletest) framework and moc
 g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $HOME/eigen -I $HOME/clara/include testing/channels.cpp -o channels
 ```
 
+## running test clara with docker
+```
+docker build -t clara-test -f ./docker/Dockerfile.clara_test . && docker run -it --name=clara-test clara-test
+```
+
 information:
 - ``-pedantic`` ensure that the code conforms to the strictest standard of the C++ language
 - ``-std=c++11`` specifies that the code should be compiled using c++11
@@ -81,6 +86,7 @@ information:
 - ``-Weffc++`` enables warnings about potential erroes in the code
 - ``-fopenmp`` enables ``OpenMP`` support
 - ``-g3`` enable debugging symbol
+- ``docker`` best pratices for testing application if you are using windows
 
 ## Reference
 
