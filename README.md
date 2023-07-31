@@ -1,6 +1,8 @@
 ![clara-image](.github/clara.png)
 
-![Clara ubuntu test](https://img.shields.io/github/actions/workflow/status/slowy07/clara/cpp-testing.yml?style=flat-square&logo=github&label=Clara%20Ubuntu%20Test)
+![Clara ubuntu test](https://img.shields.io/github/actions/workflow/status/slowy07/clara/cpp-testing.yml?style=flat-square&logo=github&label=Clara%20Ubuntu%20Test) 
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/slowy07/clara/docker-testing.yml?style=flat-square&logo=docker&label=Docker%20build)
+
 
 Quantum computing is a type of computing that harnesses the power of quantum mechanics to solve problems that are too difficult for classical computers. Quantum computers use qubits, which are quantum bits, to store information. Qubits can be in a superposition of states, which means that they can be both 0 and 1 at the same time. This allows quantum computers to perform calculations that are exponentially faster than classical computers.
 
