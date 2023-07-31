@@ -74,13 +74,19 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
     Ai.push_back(powm(rA, i));
     Aidagger.push_back(powm(adjoint(rA), i));
   }
+  
+  // total dimension
   idx D = static_cast<idx>(rstate.rows());
-  idx N = dims.size();
-  idx ctrlsize = ctrlgate.size();
+  // total number of subsystem
+  idx n = dims.size();
+  // number of ctrl subsystem
+  idx ctrlsize = ctrl.size();
+  // number of ctrl + gate subsystem
   idx ctrlgatesize = ctrlgate.size();
   idx subsyssize = subsys.size();
   // dimension of ctrl subsystem
   idx Dctrl = static_cast<idx>(std::llround(std::pow(d, ctrlsize)));
+  // dimension of gate subsystem
   idx DA = static_cast<idx>(rA.rows());
 
   // local dimension
@@ -90,14 +96,15 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   idx CdimsCTRLA_bar[maxn];
 
   // compute the complementary subsystem
-  std::vector<idx> ctrlgate_bar = complement(ctrlgate, N);
+  std::vector<idx> ctrlgate_bar = complement(ctrlgate, n);
   // number of subsystem that are complementary to the ctrlgate
   idx ctrlgate_barsize = ctrlgate_bar.size();
+  // dimension of the rest
   idx DCTRLA_bar = 1;
   for (idx i = 0; i < ctrlgate_barsize; ++i)
     DCTRLA_bar *= dims[ctrlgate_bar[i]];
 
-  for (idx k = 0; k < N; ++k)
+  for (idx k = 0; k < n; ++k)
     Cdims[k] = dims[k];
   for (idx k = 0; k < subsyssize; ++k)
     CdimsA[k] = dims[subsys[k]];
@@ -124,8 +131,8 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
       Cmidx[ctrl[k]] = i_;
     }
 
-    internal::n2multiidx(r_, N - ctrlgatesize, CdimsCTRLA_bar, CdmixCTRLA_bar);
-    for (idx k = 0; k < N - ctrlgatesize; ++k) {
+    internal::n2multiidx(r_, n - ctrlgatesize, CdimsCTRLA_bar, CdmixCTRLA_bar);
+    for (idx k = 0; k < n - ctrlgatesize; ++k) {
       Cmidx[ctrlgate_bar[k]] = CdmixCTRLA_bar[k];
     }
 
@@ -136,7 +143,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
     }
 
     // get the total index
-    indx = internal::multiidx2n(Cmidx, N, Cdims);
+    indx = internal::multiidx2n(Cmidx, n, Cdims);
 
     // compute the coefficient
     for (idx n_ = 0; n_ < DA; ++n_) {
@@ -144,7 +151,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
       for (idx k = 0; k < subsyssize; ++k) {
         Cmidx[subsys[k]] = CmidxA[k];
       }
-      coeff += Ai[i_](m_, n_) * rstate(internal::multiidx2n(Cmidx, N, Cdims));
+      coeff += Ai[i_](m_, n_) * rstate(internal::multiidx2n(Cmidx, n, Cdims));
     }
     return std::make_pair(coeff, indx);
   };
@@ -181,9 +188,9 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
     }
 
     // set the rest
-    internal::n2multiidx(r1_, N - ctrlgatesize, CdimsCTRLA_bar, CmidxCTRLA_barrow);
-    internal::n2multiidx(r2_, N - ctrlgatesize, CdimsCTRLA_bar, CmidxCTRLA_barcol);
-    for (idx k = 0; k < N - ctrlgatesize; ++k) {
+    internal::n2multiidx(r1_, n - ctrlgatesize, CdimsCTRLA_bar, CmidxCTRLA_barrow);
+    internal::n2multiidx(r2_, n - ctrlgatesize, CdimsCTRLA_bar, CmidxCTRLA_barcol);
+    for (idx k = 0; k < n - ctrlgatesize; ++k) {
       Cmidxrow[ctrlgate_bar[k]] = CmidxCTRLA_barrow[k];
       Cmidxcol[ctrlgate_bar[k]] = CmidxCTRLA_barcol[k];
     }
@@ -195,8 +202,8 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
       Cmidxrow[subsys[k]] = CmidxArow[k];
       Cmidxcol[subsys[k]] = CmidxAcol[k];
     }
-    idxrow = internal::multiidx2n(Cmidxrow, N, Cdims);
-    idxcol = internal::multiidx2n(Cmidxcol, N, Cdims);
+    idxrow = internal::multiidx2n(Cmidxrow, n, Cdims);
+    idxcol = internal::multiidx2n(Cmidxcol, n, Cdims);
 
     bool all_ctrl_rows_equal = true;
     bool all_ctrl_cols_equal = true;
@@ -228,7 +235,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
       for (idx k = 0; k < subsyssize; ++k) {
         Cmidxrow[subsys[k]] = CmidxArow[k];
       }
-      idx idxrowtmp = internal::multiidx2n(Cmidxrow, N, Cdims);
+      idx idxrowtmp = internal::multiidx2n(Cmidxrow, n, Cdims);
 
       if (all_ctrl_rows_equal) {
         lhs = Ai[first_ctrl_row](m1_, n1_);
@@ -248,7 +255,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
           rhs = (n2_ == m2_) ? 1 : 0;  // identity matrix
         }
 
-        idx idxcoltmp = internal::multiidx2n(Cmidxcol, N, Cdims);
+        idx idxcoltmp = internal::multiidx2n(Cmidxcol, n, Cdims);
 
         coeff += lhs * rstate(idxrowtmp, idxcoltmp) * rhs;
       }
@@ -327,7 +334,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   if (!internal::check_nonzero_size(rstate))
     throw exception::ZeroSize("clara::applyCTRL()");
 
-  if (d < 2)
+  if (d == 0)
     throw exception::DimsInvalid("clara::applyCTRL()");
 
   idx N = internal::get_num_subsys(static_cast<idx>(rstate.rows()), d);
