@@ -14,8 +14,18 @@
 namespace clara {
 
 /**
- * @brief von neuman entropy of density matrix A
- * @return von neuman entropy, with the logarithm in base 2
+ * @brief calculate the von neuman entropy of the density matrix 'A'
+ * @param A eigen matrix or matrix expression representing the density matrix
+ * @return double the von neuman entropy, with the logarithm in base 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::MatrixNotSquare thrown if 'A' is not a square matrix
+ *
+ * @example
+ * Eigen::matrixXd densityMatrix;
+ *
+ * // calculate the von neumann entropy for the density matrix
+ * double entropyValue = entropy(densityMatrix);
  */
 template <typename Derived>
 double entropy(const Eigen::MatrixBase<Derived>& A) {
@@ -28,25 +38,44 @@ double entropy(const Eigen::MatrixBase<Derived>& A) {
   if (!internal::check_square_mat(rA))
     throw exception::MatrixNotSquare("clara::entropy()");
 
+  // calculate the singular values 'A'
   dmat ev = svals(rA);
   double result = 0;
-  for (idx i = 0; i < static_cast<idx>(ev.rows()); ++i)
+  for (idx i = 0; i < static_cast<idx>(ev.rows()); ++i) {
+    // calculate the von neuman entropy term for each non-zero
+    // singular value
     if (ev(i) != 0)
       result -= ev(i) * std::log2(ev(i));
+  }
   return result;
 }
 
 /**
- * @brief shannon entropy of probability distribution ``prob``
- * @return shannon strategy with logarithm in base 2
+ * @brief calculate shanon entropy of a probability distribution
+ *
+ * @param prob the probability distribution as a vector of doubles
+ * @return double the shanon entropy, with the logarithm in base 2
+ *
+ * @exception exception::ZeroSize thrown if the input probability distribution has zero size
+ *
+ * @note the function assumes that the probability distribution is a valid
+ *        discrete probability distribution. the probability should be non-negative and sum up to 1
+ *
+ * @example
+ * std::vector<double> probabilities = {0.3, 0.2, 0.5};
+ *
+ * double entropyValue = entropy(probabilities);
  */
 inline double entropy(const std::vector<double>& prob) {
   if (!internal::check_nonzero_size(prob))
     throw exception::ZeroSize("clara::entropy()");
   double result = 0;
-  for (idx i = 0; i < prob.size(); ++i)
+  for (idx i = 0; i < prob.size(); ++i) {
+    // calculate the shanon entropy term for each non-zero
+    // probability
     if (std::abs(prob[i]) != 0)
       result -= std::abs(prob[i]) * std::log2(std::abs(prob[i]));
+  }
   return result;
 }
 
@@ -84,8 +113,36 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
 }
 
 /**
- * @brief Renyi-\f$\alpha\f$ entropy of the probability distribution prob
- * @return renyi-\f$\alpha\f$ entropy, with the logarithm in base 2
+ * @brief calculate the renyi \alpha-entropy of a density matrix 'A'
+ *
+ * the renyi \alpha-entropy is a generalization of the shannon entropy and is defined as follows
+ * - when \alpha > 0 and \alpha ≠ 1, the renyi \alpha-entropy given by:
+ *   \f$ H_{\alpha}(A) = \frac{1}{1-\alpha} \log_2 \left( \sum_i \lambda_i^\alpha \right) \f$A
+ *   where \delta_i are the singular values of the density matrix 'A'.
+ * - when \alpha = 0, the renyi \alpha-entropy is given by
+ *   f$ H_{0}(A) = \log_2 ( \text{rank}(A) ) \f$, where rank(A) is the rank of 'A'
+ * - when \delta = 1, the renyi \delta-entropy is equivalent to the shannon entropy, given by
+ *   \f$ H_{1}(A) = - \sum_i \lambda_i \log_2(\lambda_i) \f$
+ *   where \delta_i are the singular values of the entropy density matrix 'A'
+ * - whena \delta approaches infinity, the renyi \delta-entropy approaches
+ *   \f$ H_{\infty}(A) = - \log_2(\lambda_{\text{max}}) \f$, where λ_{\text{max}}
+ *   is the largest singluar singular value of 'A'
+ *
+ * @tparam derived the matrix expression type
+ * @param A eigen matrix or matrix expression representing the density matrix
+ * @param alpha the parameter \delta for renyi \delta-entropy calculation. should be a >= 0
+ * @return double the renyi \delta-entropy with the logarithm in base 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::MatrixNotSquare thrown if 'A' is not a square matrix
+ * @exception exception::OutOfRange thrown if 'alpha' is less than 0
+ *
+ * @example
+ * Eigen::matrixXd densityMatrix;
+ * double alpha = 2.0;
+ *
+ * // calculate the renyi \alpha-entropy for the density matrix with \alpha = 2
+ * double renyiEntropy = renyi(densityMatrix, alpha);
  */
 inline double renyi(const std::vector<double>& prob, double alpha) {
   if (!internal::check_nonzero_size(prob))
@@ -112,8 +169,32 @@ inline double renyi(const std::vector<double>& prob, double alpha) {
 }
 
 /**
- * @brief tsallis entropy of density matrix A for f$q\geq 0f$
- * @return tsallis entropy
+ * @brief calculate the Tsallis q-entropy density matrix 'A'
+ *
+ * Tsallis q-entropy is generalization of the shannon entropy and is defined as follows:
+ * - when q > 0 and != 1, Tsallis q-entropy is given
+ *   \f$ T_q(A) = \frac{{1 - \sum_i \lambda_i^q}}{{q - 1}} \f$
+ *   where \delta_i are the singular values of the density matrix 'A'
+ * - when q = 1, the Tsallis q-entropy is equivalent the von neuman entropy, given by
+ *   \f$ T_1(A) = S(A) \cdot \log(2) \f$
+ *   where S(A) is the shannon entropy of 'A'
+ *
+ * @tparam derived the matrix expression type
+ * @param A eigen matrix or matrix expression represnting the density matrix
+ * @param q the parameter q for the Tsallis q-entropy calculation should be q >= 0
+ * @return double the Tsallis q-entropy
+ *
+ * @exception exception::ZeroSize if 'A' has zero size
+ * @exception exception::MatrixNotSquare thrown if 'A' is not square matrix
+ * @exception exception::OutOfRange thrown if 'q' is less than 0
+ *
+ * @example
+ * Eigen::matrixXd densityMatrix;
+ * double q = 2.0;
+ *
+ * // calculate the Tsallis q-entropy for the density matrix with q = 2
+ * double densityMatrix = tsallis(densityMatrix, q);
+ *
  */
 template <typename Derived>
 double tsallis(const Eigen::MatrixBase<Derived>& A, double q) {
@@ -138,26 +219,86 @@ double tsallis(const Eigen::MatrixBase<Derived>& A, double q) {
 }
 
 /**
- * @brief tsallis-\f$q\f$ entropy of the probability distribution prob
+ * @brief tsallis-\f$q\f$ entropy of the probability distribution prob  for q >= 0
+ *
+ * the Tsallis q-entropy is generalization of the shannon entropy and is defined as follows
+ * - when q > 0 and q != 1, the Tsallis q-entropy is given by
+ *   \f$ T_q(\text{prob}) = \frac{{\sum_i |p_i|^q - 1}}{{1 - q}} \f$
+ *   where the p_i are the elements of the probability distribution 'prob'
+ * - when q = 1, the Tsallis q-entropy is equivalent of the shannon entropy, given by
+ *   \f$ T_1(\text{prob}) = S(\text{prob}) \f$
+ *   where $(prob) is the shannon entropy of the probability distribution
+ * - when q = 0, the Tsallis q-entropy is equivalent to the logarithm of the number of non-zero
+ * elements in 'prob', i.e \f$ T_0(\text{prob}) = \log_2(\text{number of non-zero elements in prob})
+ * \f$
+ *
+ * @param prob the vector of double representing the probability distribution
+ * @param q the parameter q for the Tsallis q-entropy calculation. should be q >= 0
+ * @return double the Tsallis q-entropy of the given probability distribution, with the logarithm in
+ * base 2
+ *
+ * @exception exception::ZeroSize thrown if 'prob' has zero size
+ * @exception exception::OutOfRange thrown if 'q' is less than 0
+ *
+ * @example
+ * std::vector<double> probabilityDistribution = {0.2, 0.3, 0.5};
+ * double q = 0.5;
+ *
+ * // calculate the Tsallis q-entropy for the probability distribution with q = 0.5
+ * double tsallisEntropy = tsallis(probabilityDistribution, q);
  */
 inline double tsallis(const std::vector<double>& prob, double q) {
+  // check if the probability distribution has non-zero size
   if (!internal::check_nonzero_size(prob))
     throw exception::ZeroSize("clara::tsallis()");
   if (q < 0)
     throw exception::OutOfRange("clara::tsallis()");
+  // check if q is valid (q >= 0)
   if (q == 1)
     return entropy(prob) * std::log(2.);
 
+  // calculate the tsallis q-entropy using the provided formula
   double result = 0;
-  for (idx i = 0; i < prob.size(); ++i)
+  for (idx i = 0; i < prob.size(); ++i) {
+    // calculate the term for each non-zero probability value
     if (std::abs(prob[i]) != 0)
       result += std::pow(std::abs(prob[i]), q);
+  }
+  // calculate the Tsallis q-entropy and return the result
   return (result - 1) / (1 - q);
 }
 
 /**
- * @brief quantum mutual information between 2 subsystem of composite system
- * @return mutual information between 2 subsystem
+ * @brief calculate the quantum mutual information between two subsystem of a composite
+ *        system
+ * quantum mutual information measures the mutual information two subsystem A and B of composite
+ * quantum system. it is defined as the different of the sum of the entropies of the reduced
+ * dmatrices of subsystem A and B and the entropy of the reduced density matrix of their AB: \f$
+ * I(A:B) = S(\rho_A) + S(\rho_B) - S(\rho_{AB}) \f$
+ *
+ * @param A the input density matrix representing the composite quantum system
+ * @param subsysA indices of the subsystem A
+ * @param subsysB indices of the subsystem B
+ * @param dims vector of dimension of the subsystem
+ * @return double the quantum mutual information between subsystem A and B
+ *
+ * @exception exception::ZeroSize thrown if the input density matrix 'A' has zero size
+ * @exception exception::DimsInvalid thrown if the input dimension vector 'dims' is invalid
+ * @exception exception::MatrixNotSquare thrown if the input density matrix 'A' is not square
+ * @exception exception::DimsMismatchMatrix thrown if the input dimension vector `dims` does not
+ * match dimension of 'A'
+ * @exception exception::SubsysMismatchdims thrown if the input subsystem 'subsyA' and 'subsysB' do
+ * not match dimension 'A'
+ *
+ * @example
+ * Eigen::matrixXd densityMatrix = ...;
+ * std::vector<idx> subsystemA = {0, 1};
+ * std::vector<idx> subsystemB = {2, 3};
+ * std::Vector<idx> dimensions = {2, 2, 2, 2};
+ *
+ * // calculate the quantum mutual information between subsystem A and B
+ * double mutualInfo = qmutualinfo(densityMatrix, subsystemA, subsystemB, dimensions);
+ *
  */
 template <typename Derived>
 double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& subsysA,
@@ -206,12 +347,32 @@ double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& 
   cmat rhoA = ptrace(rA, subsysA_bar, dims);
   cmat rhoB = ptrace(rA, subsysB_bar, dims);
   cmat rhoAB = ptrace(rA, subsysAB_bar, dims);
+
+  // calculate the quantum mutual information using provided formula
   return entropy(rhoA) + entropy(rhoB) - entropy(rhoAB);
 }
 
 /**
- * @brief mutual information between 2 subsystem of composite system
- * @return mutual information between the 2 subsystem
+ * @brief calculate the mutual information between two subystem of a compute system
+ *
+ * mutual information measures the amount of information shared between two subsystem
+ * A and B of a composite quantum system. it is defined as the difference of the sum of
+ * the entropies of the reduced density matrices of subsystem A and B and the entropy of the
+ * reduced density matrix of their union AB: \f$ I(A:B) = S(\rho_A) + S(\rho_B) - S(\rho_{AB}) \f$
+ *
+ * @param A the input density matrix representing the composite quantum system
+ * @param subsyA indices of the subsystem A
+ * @param subsyB indices of the subsystem B
+ * @param d dimension of the subsystem (default is 2)
+ * @return double the mutual information between subsystem A and B
+ *
+ * @example
+  * Eigen::matrixXd densityMatrix = ...;
+  * std::vector<idx> subsystemA = {0, 1}
+  * std::vector<idx> subsystemB = {0, 2}
+  * 
+  * // calculate the mutual information between subsystem A and B
+  * double mutualInfo = qmutualinfo(densityMatrix, subsystemA, subsystemB, dimension);
  */
 template <typename Derived>
 double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& subsysA,

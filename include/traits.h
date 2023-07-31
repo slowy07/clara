@@ -6,10 +6,17 @@
 #include <type_traits>
 namespace clara {
 
+/**
+ * @brief metafunction to create a void type for template parameter pack expansion
+ */
 template <typename... Ts>
 struct make_void {
   typedef void type;
 };
+
+/**
+ * @brief alias template for the void type created by the matke_void metafunction
+ */
 template <typename... Ts>
 using to_void = typename make_void<Ts...>::type;
 
@@ -22,6 +29,13 @@ using to_void = typename make_void<Ts...>::type;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
 #endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+
+/**
+ * @brief check whether a type is compatible with STL-like iterable container
+ *
+ * this traits provideds a constant member value that is true if the type 'T' is
+ * compatible with an STL-like iterable container, and false otherwise
+ */
 template <typename T, typename = void>
 struct is_iterable : std::false_type {};
 
@@ -61,36 +75,36 @@ struct is_matrix_expression : std::is_base_of<Eigen::MatrixBase<typename std::de
 
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic pop
-#endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 
 /**
-* @brief check whether the type is complex type
-* provide the constant member value which is equal to true,
-* if the type is a complex type.
-*/
+ * @brief check whether the type is complex type
+ * provide the constant member value which is equal to true,
+ * if the type is a complex type.
+ */
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
-#endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 template <typename T>
 struct is_complex : std::false_type {};
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic pop
-#endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 
 /**
-* @brief check whether the type is complex number type,
-* specialization for complex type
-*/
+ * @brief check whether the type is complex number type,
+ * specialization for complex type
+ */
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic push
 #pragam GCC diagnostic ignored "-Weffc++"
-#endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 template <typename T>
 struct is_complex<std::complex<T>> : std::true_type {};
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic pop
- #endif // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 
 }  // namespace clara
 

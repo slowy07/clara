@@ -110,8 +110,8 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
    * worker computes the coefficient and index for ket case
    * used in #pragma omp parallel fro collapse
    */
-  auto coeff_idx_ket = [&](idx i_, idx m_,
-                           idx r_) noexcept -> std::pair<typename Derived1::Scalar, idx> {
+  auto coeff_idx_ket = [&](const idx i_, const idx m_,
+                           const idx r_) noexcept -> std::pair<typename Derived1::Scalar, idx> {
     idx indx = 0;
     typename Derived1::Scalar coeff = 0;
 
@@ -153,8 +153,9 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
    * worker computes the coefficient and the index
    * for the density matrix case used in #pragma omp parallel for collapse
    */
-  auto coeff_idx_rho = [&](idx i1_, idx m1_, idx r1_, idx i2_, idx m2_,
-                           idx r2_) noexcept -> std::tuple<typename Derived1::Scalar, idx, idx> {
+  auto coeff_idx_rho =
+      [&](const idx i1_, const idx m1_, const idx r1_, const idx i2_, const idx m2_,
+          const idx r2_) noexcept -> std::tuple<typename Derived1::Scalar, idx, idx> {
     idx idxrow = 0;
     idx idxcol = 0;
     typename Derived1::Scalar coeff = 0, lhs = 1, rhs = 1;
@@ -459,7 +460,7 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks,
            const std::vector<idx>& subsys, const std::vector<idx>& dims) {
   const cmat& rA = A.derived();
   if (!internal::check_nonzero_size(rA))
-   throw exception::ZeroSize("clara::apply()");
+    throw exception::ZeroSize("clara::apply()");
   if (!internal::check_square_mat(rA))
     throw exception::MatrixNotSquare("clara::apply()");
   if (!internal::check_dims(dims))

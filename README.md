@@ -23,6 +23,7 @@ repository: [gitlab](https://gitlab.com/libeigen/eigen)
     ```
     sudo apt-get update
     sudo apt-get install libeigen3-dev
+    cp -r /usr/local/include/eigen3/Eigen /usr/local/include
     ```
 - arch package
     for installing on arch based

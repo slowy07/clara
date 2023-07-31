@@ -15,8 +15,28 @@
 #include "types.h"
 namespace clara {
 /**
- * @brief schidmit coefficients of bi-partite pure state A
- * @note the sum square of the schidmit coefficients equals 1
+ * @brief calculate the schmidt coefficients of bipartite pure state 'A'
+ * @note the sum of square of schmidt coefficients equal 1
+ * @tparam derived the matrix expression type
+ * @param A the eigen matrix of matrix expression representing the bipartitepure state
+ * @param dims vector containing the dimension of the tow subsystem
+ *              the size of the vector should be 2, and dims[0] should be the dimension
+ *              of the first dimension of the second subsystem
+ * @return dyn_col_vect<double> A column vector containing the schmidt coefficients
+ *                              of pure state 'A'
+ *
+ * @exception exception::ZeroSize throw if 'A' has zero size
+ * @exception exception::NotBipartite thrown if 'dims' does not contain excatly 2 dimension
+ * @exception exception::DimsMismatchCvector thrown if dimension in 'dims' do not match
+ *                                          the dimension of 'A'
+ * @example
+ * Eigen::MatrixXd bipartiteState(3, 4);
+ *
+ * // define the dimension of the two subsystem
+ * std::vector<idx> dimensions = {3, 4};
+ *
+ * // calculat the schmidt coefficients of the bipartite pure state
+ * dyn_col_vect<double> schmidCoeffs = schmidtcoeffs(bipartiteState, dimensions);
  */
 template <typename Derived>
 dyn_col_vect<double> schmidcoeffs(const Eigen::MatrixBase<Derived>& A,
@@ -32,14 +52,34 @@ dyn_col_vect<double> schmidcoeffs(const Eigen::MatrixBase<Derived>& A,
   if (!internal::check_dims_match_mat(dims, rA))
     throw exception::DimsMismatchCvector("clara::schmidtcoeffs()");
 
+  // calculate the singlar value of the transposed and reshaped matrix
   return svals(transpose(reshape(rA, dims[1], dims[0])));
 }
 
 /**
- * @brief schmidt coefficients of the bi-partite pure state A
- * @note the sum of the squares of schmidt coefficients equals
- * @return schmidt coefficients of A, as a real dynamic column vector
+ * @brief calculate the schmidt coefficients of a bipartite pure state 'A'
+ * @note the sum of the square of schmidt coefficients equals 1
+ * @tparam derived the matrix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite pure state
+ * @param d the dimension of each subsystem. default value is 2
+ * @return dyn_col_vect<double> A column vector containing schmidt coefficients of the
+ *                              pure state 'A'
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 2
+ * @exception exception::NotBipartite thrown if the dimension 'd' result in a non bipartite
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the schmidt coefficients of the bipartite pure state with a default dimensio
+ * // of 3
+ * dyn_col_vect<double> schmidtCoeffs = schmidtcoeffs(bipartiteState);
+ *
+ * // calculate the schmidt coefficients of the bipartite purestate
+ * // with a specified dimension of 3
+ * dyn_col_vect<double> schmidCoeffs3 = schmidtcoeffs(bipartiteState, 3);
  */
+
 template <typename Derived>
 dyn_col_vect<double> schmidtcoeffs(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
@@ -55,10 +95,29 @@ dyn_col_vect<double> schmidtcoeffs(const Eigen::MatrixBase<Derived>& A, idx d = 
 }
 
 /**
- * @brief schmidt basis on alice slide
- * @return unitary matrix \f$ U \f$ whose columns represent
- * the schmidt basis vectors on alice slide
+ * @brief calculate the schmidt basis on alices's side for a bipartite pure state 'A'
+ * @tparam derived the matrix expression type
+ * @param dims A vector containing the dimension of the tow subsystem
+ *            the size of the vector should be 2, and dims[0] shuold be the dimension of
+ *            the first subsystem, and dims[1] should be the dimension of the second subsystem
+ * @return cmat the unitary matrix 'U' whose column represent the schmidt basis vectors on alice
+ * slide
+ *
+ * @exception exception::ZeroSize thrown if 'A' is zero size
+ * @exception exception::NotBipartite thrown is 'dims' does not conain excatly 2 dimension
+ * @exception exception::MatrixNotCvector thrown if 'A' is not column vector
+ * @exception exception::DimsMismatchCvector thrown if the dimension in 'dims' do not
+ *                                        match dimension of 'A'
+ * @example
+ * Eigen::MatrixXd bipartiteState(3, 4);
+ *
+ * // define the dimension of the two subystem
+ * std::vector<idx> dimension = {3, 4};
+ *
+ * // calculate the schmidt basis on alice side for the bipartite pure state
+ * cmat schmidtMatrix = schmidtA(bipartiteState, dimension);
  */
+
 template <typename Derived>
 cmat schmidtA(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
@@ -76,9 +135,22 @@ cmat schmidtA(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims)
 }
 
 /**
- * @brief schmidt basis on alice side
- * @return unitary matrix \f$ U \f$ whose columns represent
- * the schmidt basis vectors on alice side
+ * @brief calculate the schmidt basis on Alice's side for a bipartite pure 'A'
+ * @tparam derived the matrix expression type
+ * @param A eigen matrix or matrix expression representing the bipartite pure state
+ * @param d the dimension fo each subystem default is 2
+ * @return cmat the unitary matrix `u` whose column represent the schmidt basis vector on alice's
+ * side.
+ *
+ * @exception exception::ZeroSize thrown is 'A' has zero size
+ * @exception exception::DimsInvalid throw if 'd' is less than 2
+ * @exception exception::NotBipartite thrown if the dimension 'd' result in non-bipartite state
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the schmidt basis on Alice's side with default dimension of 2 for each subystem
+ * cmat schmidtMatrix = schmidtA(bipartiteState);
  */
 template <typename Derived>
 cmat schmidtA(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -94,9 +166,22 @@ cmat schmidtA(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
 }
 
 /**
- * @brief schmidt basis on bob side
- * @return unitary matrix ``V`` whose columns represent
- * the schmidt basis vectors on bob side
+ * @brief calculate the schmidt basis on bob's side for a bipartite pure state 'A'
+ * @tparam the eigen matrix or matrix expression represnting the bipartite pure state
+ * @param dims a vector containing the dimension of the two subsystem
+ *              the size of the vector should be 2, and dims[0] should be the dimension of
+ *              the first subsystem, and dims[1] should be the dimension of the second
+ *              subsystem.
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::NotBipartite thrown if 'dims' does not contain excatly 2 dimension
+ * @exception exception::MatrixNotCvector thrown if 'A' is not column vector
+ * @exception exception::DimsMismatchCvector thrown if the dimensions in 'dims' do not match of 'A'
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(3, 4);
+ *
+ * // define the dimension of the two subystem
+ * std::vector<idx> dimensions = {3, 4};
  */
 template <typename Derived>
 cmat schmidtB(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims) {
@@ -118,9 +203,20 @@ cmat schmidtB(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims)
 }
 
 /**
- * @brief schmidt basis on bob side
- * @return unitary matrix V whose columns repersent the schmidt basis
- * vectors on bob side
+ * @brief calculate the schmidt basis bob's side for a bipartite pure state 'A'
+ * @tparam derived the matrix expression type
+ * @param d the dimension of each subsystem expression representing the bipartite pure state
+ * @param d the dimension of each subsystem. default value value is 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has hero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 0
+ * @exception exception::NotBipartite thrown if the dimension 'd' result in non bipartite-state
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the schmidt basis on bob's side with a specified dimension of
+ * // of 3 for each subsystem
  */
 template <typename Derived>
 cmat schmidtB(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -137,10 +233,23 @@ cmat schmidtB(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
 }
 
 /**
- * @brief schmidt probabilities of the bi-partite pure state A
- * define as the square of the schmidt coefficients
- * the sum the schmidt probabilities equals 1.
- * @return real vector consistring of the schmidt probabilities.
+ * @brief calculate the squared schmidt coefficients (schmidt probabilites) for a bipartite
+ *        state 'A'
+ * @tparam derived the marix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite pure state
+ * @param dims A vector containing the dimension of the two subsystem
+ *            the size of the vector should be 2, and dims[0] should be the dimension of the
+ *            first subsystem, and dims[1] should be the dimension of the second subsystem
+ * @return std::vector<double> A vector containing the squared schmidt coefficients
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(3, 4);
+ *
+ * // Define the dimension of the two subsystem
+ * std::vector<idx> dimension = {3, 4};
+ *
+ * // caculate the squared schmidt coefficients for the bipartite pure state
+ * std::vector<double> schmidtProbs = schmidtprobs(bipartiteState, dimensions);
  */
 template <typename Derived>
 std::vector<double> schmidtprobs(const Eigen::MatrixBase<Derived>& A,
@@ -166,9 +275,26 @@ std::vector<double> schmidtprobs(const Eigen::MatrixBase<Derived>& A,
 }
 
 /**
- * @brief schmidt probabilities of the bi-partite pure state A
- * defined as the square of the schmidt coefficients probabilities equals 1
- * @return real vector consiting of the schmidt probabilities of A
+ * @brief calculate the square schmidt probabilites for a bipartite pure state 'A'
+ *
+ * @tparam derived matrix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite pure state
+ * @param d the dimension of each subsystem. default value is 2
+ * @return std::vector<double> A vector containgin the squared schmidt probabilites
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 2
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the squared schmidt probabilites with a default dimension of 2 for each
+ * // subsystem
+ * std::vector<double> schmidtProbs = schmidtprobs(bipartiteState);
+ *
+ * // calculate the squared schmidt probabilites with a specified dimension fo 3 for each
+ * // subystem
+ * std::vector<double> schmidtProbs3 = schmidtprobs(bipartiteState, 3);
  */
 template <typename Derived>
 std::vector<double> schmidtprobs(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -185,10 +311,24 @@ std::vector<double> schmidtprobs(const Eigen::MatrixBase<Derived>& A, idx d = 2)
 }
 
 /**
- * @brief entanglement of the bi-partite pure state A
- * defined as the von neuman entropy of the reduced density matrix
- * of one of the subsystem
- * @return entanglement with logarithm in base
+ * @brief calculate the logarithmic negativity of a bipartite mixed state 'A'
+ * @tparam derived the matrix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite mixed state
+ * @param d the dimension of each subsystem. default value is 2
+ * @return double the logarithmic negativity with the logarithm in base 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' less than 0
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteMixedState(4, 4);
+ *
+ * // calculate the logarithmic negativity for the bipartite mixed state with a default
+ * double logNegativityValue = lognegativity(bipartiteMixedState);
+ *
+ * // calculate the logarithmic negativity for the bipartite mixed state with a specific
+ * // subystem
+ * double logNegativityValue3 = lognegativity(bipartiteMixedState, 3);
  */
 template <typename Derived>
 double entanglement(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims) {
@@ -207,10 +347,26 @@ double entanglement(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>&
 }
 
 /**
- * @brief entanglement of bi-partite pure state A
- * defined as the von-neumann entropy of the reduced density matrix
- * of one the subsystem
- * @return entanglement with logarithm in base 2
+ * @brief calculate the entanglement of a bipartite pure state 'A'
+ * @tparam Derived the matrix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite pure state
+ * @param d the diension of each subsystem, default is 2
+ * @return double the entanglement with logarithm in base 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 2
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the entanglement with a defualt dimension of 2 for each subsystem
+ * double entanglementValue = entanglement(bipartiteState);
+ *
+ * // calculate the entanglement with a specified dimension of
+ * double entanglementValue = entanglement(bipartiteState, 3);
+ *
+ * // calculate the entanglement with a specified dimension of 3 for each subsystem
+ * double entanglementValue3 = entanglement(bipartiteState, 3);
  */
 template <typename Derived>
 double entanglement(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -226,8 +382,20 @@ double entanglement(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
 }
 
 /**
- * @brief G-concurrence of the bi-partite pure state A
- * @return G-concurrence
+ * @brief calculated the G-concurrence of a bipartite pure state 'A'
+ * @tparam derived the matrix expression type
+ * @param A the eigen matrix or matrixx expression representing the bipartite pure state.
+ * @return double the G-concurrence
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::MatrixNotCvector thrown if 'A' is not a column
+ * @exception exception::DimsNotEqual thrown if the number
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteState(4, 4);
+ *
+ * // calculate the G-concurrence for the bipartite pure state
+ * double gConccurenceValue = gconcurrence(bipartiteState);
  */
 template <typename Derived>
 double gconcurrence(const Eigen::MatrixBase<Derived>& A) {
@@ -245,8 +413,24 @@ double gconcurrence(const Eigen::MatrixBase<Derived>& A) {
 }
 
 /**
- * @brief negativity of the bi-partite mixed state A
- * @return negativity
+ * @brief calculate the negativity of a bipartite mixed state 'A'.
+ * @param A the eigen matrix or matrix expression representing the bipartite mixed state
+ * @param dims the dimension of the subystem as a vector [dim_subys1, dims_subsys2]
+ * @return double the negativity of the bipartite mixed state
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::NotBipartite thrown if the dims vector does not have exactly two elements
+ * @exception exception::MatrixNotSquare thrown if 'A' is not a square matrix
+ * @exception exception::DimsMismatchMatrix thrown if the dimension
+ *                                specified by 'dims' do not match the matrix
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteMixedState(4, 4);
+ *
+ * std::vector<idx> dims = {2, 2};
+ *
+ * // calculate the negativity for the bipartite mixed state
+ * double negativityValue = negativity(bipartiteMixedState, dims);
  */
 template <typename Derived>
 double negativity(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims) {
@@ -266,8 +450,22 @@ double negativity(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& d
 }
 
 /**
- * @brief negativity of the bi-partite mixed state A
- * @return negativity
+ * @brief calculate the negativity of a bipartite mixed state 'A'
+ * @tparam Derived the matrix expression representing the bipartite
+ * @param A the eigen matrix or matrix expression representing the bipartite mixed state
+ * @param d the dimension of each subsystem. default value is 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 2
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteMixedState(4, 4);
+ *
+ * // calculate the negativity for the bipartite mixed state
+ * double negativityValue = negativity(bipartiteMixedState);
+ *
+ * // calculate the negativity for the bipartite mixed state with specified dimension of 3 for each
+ * subystem double negativityValue3 = negativity(bipartiteMixedState, 3);
  */
 template <typename Derived>
 double negetivity(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -283,8 +481,23 @@ double negetivity(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
 }
 
 /**
- * @brief logarithmic negativity bi-partite mixed state A
- * @return logarithmic negativity with the logarithm in base 2
+ * @brief calculate the logarithmic negativity of a bipartite mixed state 'A'
+ * @tparam Derived the matrix expression type
+ * @param A the eigen matrix expression representing the bipartite mixed state.
+ * @param dims the dimension of the two subsystem as vector [dims_subsys1, dims_subsys2]
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zeros
+ * @exception exception::NotBipartite thrown 'dims' vector does not have exactly two elements
+ * @exception exception::MatrixNotSquare thrown if 'A' is not a square matrix
+ * @exception exception::DimsMismatchMatrix thrown if the dimension specified  by 'dims'
+ *                                   not match matrix 'A'
+ * @example
+ * Eigen::MatrixXd bipartiteMixedState(4, 4);
+ *
+ * std::vector<idx> dims = {2, 2};
+ *
+ * // calculate the logarithmic negativity for the bipartite mixed state
+ * double logNegativityValue = lognegativity(bipartiteMixedState, dims);
  */
 template <typename Derived>
 double lognegativity(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& dims) {
@@ -301,8 +514,24 @@ double lognegativity(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>
 }
 
 /**
- * @brief logarithmic negativity of the bo-partite mixed state A
- * @return logarithmic negativity, with the logarithmic in base 2
+ * @brief calculate the logarithmic negativity of a bipartite mixed state 'A'
+ * @param A the Eigen matrix or matrix expression representing the bipartite mixed state
+ * @param d the dimension of each subsystem, default value is 2.
+ * @return double the logarithmic negativity with the logarithmic in base 2
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::DimsInvalid thrown if 'd' is less than 0
+ *
+ * @example
+ * Eigen::MatrixXd bipartiteMixedState(4, 4);
+ *
+ * // calculate the logarithmic negativityfor the bipartite mixed state
+ * // with mixed state with default dimension of 2 for each
+ * double logNegativityValue = lognegativity
+ *
+ * // calculate the logarithmic negativity for the bipartite mixed state with specified
+ * // dimension of 3 for each subsystem
+ * double logNegativityValue3 = lognegativity(bipartiteMixedState, 3);
  */
 template <typename Derived>
 double lognegativity(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
@@ -319,8 +548,20 @@ double lognegativity(const Eigen::MatrixBase<Derived>& A, idx d = 2) {
 }
 
 /**
- * @brief wootters concurrence of the bi-partite qubit mixed state A
- * @return wotters concurrence
+ * @brief calculate the wotters concurrence of a bipartite mixed state 'A'
+ * @tparam derived the matrix expression type
+ * @param A the eigen matrix or matrix expression representing the bipartite qubit mixed state
+ * @return double the wooters concurrence
+ *
+ * @exception exception::ZeroSize thrown if 'A' has zero size
+ * @exception exception::MatrixNotSquare thrown if 'A' is not a square matrixqq
+ * @exception exception::NotQubitSubsys thrown if 'A' does not represent a qubit subsystem
+ *
+ * @example
+ * Eigen::Matrix2cd bipartiteMixedState;
+ *
+ * // calculate the wooters concurrence for the bipartite qubit  mixed state
+ * double concurrenceValue = concurrence(bipartiteMixedState);
  */
 template <typename Derived>
 double concurrence(const Eigen::MatrixBase<Derived>& A) {
