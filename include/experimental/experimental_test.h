@@ -17,9 +17,12 @@ namespace clara {
 namespace experimental {
 
 /**
- * @class clara::Dynamic_bitset
- * @brief dynamic bitset class, allow the specification of
- *         the number of bits at runtime
+ * @class Dynamic_bitset
+ * @brief Dynamic bitest class, allows the specification of the number of number bits at runtime
+ *
+ * the Dynamic_bitset class is a dynamic bitset that allows the specification of the number of bits
+ * at runtime. it provides functionalities to manipulate individual bits, set random bits, and
+ * perform bit operations.
  */
 class Dynamic_bitset {
  public:
@@ -42,6 +45,7 @@ class Dynamic_bitset {
 
   /**
    * @brief constructor, intialize all bits to false
+   * @return offset of the pos bit in the storage space relative to its index
    */
   idx offset_(idx pos) const { return pos % (sizeof(value_type) * CHAR_BIT); }
 
@@ -82,7 +86,17 @@ class Dynamic_bitset {
     return result;
   }
 
+  /**
+   * @brief get the value of the bit at the given position
+   * @param pos position of the bit to check
+   * @return true if the bit set (1), false otherwise (0)
+   */
   bool get(idx pos) const { return 1 & (v_[index_(pos)] >> offset_(pos)); }
+
+  /**
+   * @dbrief check if none of the bits are set in the bitset
+   * @return true if none of the bits are set, false otherwise
+   */
   bool none() const noexcept {
     bool result = true;
     for (idx i = 0; i < storage_size(); ++i) {
@@ -93,6 +107,10 @@ class Dynamic_bitset {
     return result;
   }
 
+  /**
+   * @brief check if all bits are set in the bitset
+   * @return true if all bits are set, false otherwise
+   */
   bool all() const noexcept {
     bool result = true;
     for (idx i = 0; i < storage_size(); ++i) {
@@ -103,13 +121,27 @@ class Dynamic_bitset {
     return false;
   }
 
+  /**
+   * @brief check if any of the bits are set in the bitset
+   * @return true if any of the bits are set, false otherwise
+   */
   bool any() const noexcept { return !(this->none()); }
 
+  /**
+   * @brief set the bit at the given position to the specified value
+   * @param pos position of the bitset
+   * @param value value to set the bit
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& set(idx pos, bool value = true) {
     value ? v_[index_(pos)] |= (1 << offset_(pos)) : v_[index_(pos)] &= ~(1 << offset_(pos));
     return *this;
   }
 
+  /*
+   * @brief all bits in the bitset to the specified value (true = 1, false = 0)
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& set() noexcept {
     for (idx i = 0; i < storage_size(); ++i) {
       v_[i] = ~0;
@@ -117,7 +149,12 @@ class Dynamic_bitset {
     return *this;
   }
 
-  // set the bit according to a random bernouli distribution
+  /**
+   * @brief set the bit at the given position randomly according to a Bernoulli distribution
+   * @param pos position of the bit to set
+   * @param p probability of setting the bit to 1
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& rand(idx pos, double p = 0.5) {
     std::random_device rd;
     std::mt19937 gen{rd()};
@@ -127,7 +164,11 @@ class Dynamic_bitset {
     return *this;
   }
 
-  // set all bits according to a random bernouli distribution
+  /**
+   * @brief set all bits in the bitset randomly according to a Bernoulli distribution
+   * @param p probability of setting each bit to 1
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& rand(double p = 0.5) {
     for (idx i = 0; i < size(); ++i) {
       this->rand(i, p);
@@ -135,13 +176,20 @@ class Dynamic_bitset {
     return *this;
   }
 
-  // set bit false
+  /**
+   * @brief reset the bit at the given position (set 0)
+   * @param pos position of the bit to reset
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& reset(idx pos) {
     v_[index_(pos)] &= ~(1 << offset_(pos));
     return *this;
   }
 
-  // set all bits 0
+  /**
+   * @brief reset all bits in the bitset
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& reset() noexcept {
     for (idx i = 0; i < storage_size(); ++i) {
       v_[i] = 0;
@@ -149,12 +197,21 @@ class Dynamic_bitset {
     return *this;
   }
 
-  // flips the bit
+  /**
+   * @brief flip the bit at the given position
+   * @param position orf the bit to flip
+   * @return reference to the modified bitset
+   */
   Dynamic_bitset& flip(idx pos) {
     v_[index_(pos)] ^= 1 << (offset_(pos));
     return *this;
   }
 
+  /**
+   * @brief equality comparsion operator for bitsets
+   * @param rhs bitset to compare with rhs
+   * @return true if the bitsets are equal, false otherwise
+   */
   Dynamic_bitset& flip() noexcept {
     for (idx i = 0; i < storage_size(); ++i) {
       v_[i] = ~v_[i];
@@ -162,7 +219,11 @@ class Dynamic_bitset {
     return *this;
   }
 
-  // operator
+  /**
+   * @brief equality comprasion operator for bitsets
+   * @param rhs bitset to compare with
+   * @return true if the bitsets are equal, false otherwise
+   */
   bool operator==(const Dynamic_bitset& rhs) const noexcept {
     assert(this->size() == rhs.size());
     bool result = true;
@@ -175,8 +236,19 @@ class Dynamic_bitset {
     return result;
   }
 
+  /**
+   * @brief inequality comprasion oeprator for bitset
+   * @param rhs bitset to compare with
+   * @return true if the bitsets are not equal, false otherwise
+   */
   bool operator!=(const Dynamic_bitset& rhs) const noexcept { return !(*this == rhs); }
 
+  /**
+   * @brief output stream operator to print the bitset in binary representation
+   * @param os output stream
+   * @param rhs bitset to print
+   * @return reference to the output stream
+   */
   friend std::ostream& operator<<(std::ostream& os, const Dynamic_bitset& rhs) {
     for (idx i = rhs.size(); i-- > 0;) {
       os << rhs.get(i);
@@ -184,6 +256,12 @@ class Dynamic_bitset {
     return os;
   }
 
+  /**
+   * @brief convert the bitset to a string representation
+   * @param zero character to represent 0 bit
+   * @param one character to represent 1 bit
+   * @return string representation of the bitset
+   */
   template <class CharT = char, class Traits = std::char_traits<CharT>,
             class Allocator = std::allocator<CharT>>
   std::basic_string<CharT, Traits, Allocator> to_string(CharT zero = CharT('0'),
@@ -204,8 +282,10 @@ class Dynamic_bitset {
 };
 
 /**
- * @class clara::Bit_circuit
- * @brief classical reversible circuit simulator
+ * @class Bit_circuit
+ * @brief classical revesible circuit simulator
+ *
+ * the Bit_circuit class is a classical
  */
 class Bit_circuit : public Dynamic_bitset {
  public:

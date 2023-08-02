@@ -11,8 +11,12 @@
 namespace clara {
 
 /**
- * @class clara::States
- * @brief const singleton class that implements most commonly used states
+ * @class States
+ * @brief const singleton class the implements commonly used quantum states
+ *
+ * the state class is a const singleton that provides implementation for commonly used
+ * quantum states it includes states like the computational states, Bell states, GHZ states
+ * W states, and more
  */
 
 class States final : public internal::Singleton<const States> {
@@ -56,8 +60,10 @@ class States final : public internal::Singleton<const States> {
   cmat pW{cmat::Zero(8, 8)};
 
   /**
-   * @brief maximally entangled state of 2 qudits
-   *  \f$\frac{1}{\sqrt{d}}\sum_{j=0}^{d-1}|jj\rangle\f$ of 2 qudits
+   * @brief returns the maximally entangled state of 2 qudits
+   * @param d Dimension of the qudits (default 2)
+   * @return maximally entangled state \f$\frac{1}{\sqrt{d}}\sum_{j=0}^{d-1}|jj\rangle\f$ of 2
+   * qudits
    */
   ket mes(idx d = 2) const {
     // check valid dims
@@ -71,7 +77,9 @@ class States final : public internal::Singleton<const States> {
   }
 
   /**
-   * @brief zero state of n qudits
+   * @brief returns the zero state of n qudits
+   * @param n number of qudits
+   * @param d dimension of the qudits
    * @return zero state \f$|0\rangle^{\otimes n}\f$ of n qudits
    */
   ket zero(idx n, idx d = 2) const {
@@ -87,8 +95,10 @@ class States final : public internal::Singleton<const States> {
   }
 
   /**
-   * @brief one state of n qudits
-   * @return one statem f$|1\rangle^{\otimes n}\f$ of qudits
+   * @brief returns the one state of n qudits
+   * @param n number of qudits
+   * @param d dimension of the qudits
+   * @return the one state \f$|1\rangle^{\otimes n}\f$ of n qudits
    */
   ket one(idx n, idx d = 2) const {
     if (n == 0)
@@ -101,7 +111,10 @@ class States final : public internal::Singleton<const States> {
   }
 
   /**
-   * @brief \f$|j\rangle^{\otimes n}\f$ state of n qudits
+   * @brief return the \f$|j\rangle^{\otimes n}\f$ state of n qudits
+   * @param j the eigenvalue to represent in the state
+   * @param n number of qudits
+   * @param d dimension of the qudits
    * @return \f$|j\rangle^{\otimes n}\f$ state of n qudits
    */
   ket jn(idx j, idx n, idx d = 2) const {
@@ -119,9 +132,10 @@ class States final : public internal::Singleton<const States> {
   }
 
   /**
-  * @brief plus state of n qubits
-  * @return plus state \f$|+\rangle^{\otimes n}\f$ of qubits
-*/
+   * @brief return the plus state of n qubits
+   * @param n number of qubits
+   * @return plus state \f$|+\rangle^{\otimes n}\f$ of n qubits
+   * */
   ket plus(idx n) const {
     if (n == 0)
       throw exception::OutOfRange("clara::States::plus()");
@@ -132,16 +146,24 @@ class States final : public internal::Singleton<const States> {
   }
 
   /**
-  * @brief minus state of n qubits
-  * @return minus state \f$|-\rangle^{\otimes n}\f$ of n qubits
-*/
+   * @brief return the minus stte of n qubits
+   * @param n number of qubits
+   * @return minus state \f$|-\rangle^{\otimes n}\f$ of n qubits
+   */
   ket minus(idx n) const {
     if (n == 0)
       throw exception::OutOfRange("clara::States::minus()");
-    return kronpow(this -> x1, n);
+    return kronpow(this->x1, n);
   }
 
  private:
+  /**
+   * @brief private constructor for the state class
+   *
+   * the constructor initialize the state vectors and projectors for the various quantum states
+   * it is private constructor because state is a const singleton, and it can only be accessed
+   * through the state member function `instance()`
+   */
   States() {
     x0 << 1 / std::sqrt(2.), 1 / std::sqrt(2.);
     x1 << 1 / std::sqrt(2.), -1 / std::sqrt(2.);

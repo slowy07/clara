@@ -52,20 +52,19 @@ website [openmp.org](https://www.openmp.org/)
 *installation for clara*
 
 - debian package (apt)
-    for installing libeigen on ubuntu
+    OpenMp already installed on ubuntu, according from [askubuntu.com](https://askubuntu.com/questions/144352/how-can-i-install-openmp-in-ubuntu).
+    if dont have libomp you can install by
     ```
-    sudo apt-get install
+    sudo apt-get install libomp-dev
     ```
+    
 - arch package
     for installing libeigen on arch based
     ```
     yay -S openmp
     ```
 - MacOS
-    ```
-    brew install llvm
-    brew install libomp
-    ```
+    install libomp more be tricky, but you can add them (maybe) by this post from [stackoverflow](https://stackoverflow.com/questions/35134681/installing-openmp-on-mac-os-x-10-11)
 
 ## Test clara
 
@@ -78,6 +77,14 @@ g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $H
 ```
 
 ## running test clara with docker
+
+You can running on docker, docker is container platform that allows you to package an application and its dependencies into single image. this image can then be run on any machine that has docker installed. this make it easy to run application in a consistent way
+
+prerequsites:
+
+- Docker
+    you can install docker by following [docker official web](https://docs.docker.com/engine/install/ubuntu/) and read the documentation to how to initialization
+    
 ```
 docker build -t clara-test -f ./docker/Dockerfile.clara_test . && docker run -it --name=clara-test clara-test
 ```
@@ -91,7 +98,3 @@ information:
 - ``-fopenmp`` enables ``OpenMP`` support
 - ``-g3`` enable debugging symbol
 - ``docker`` best pratices for testing application if you are using windows
-
-## Reference
-
-reference (journal/article/paper) used in clara can check in [``REFERENCE.md``](REFERENCE.md)

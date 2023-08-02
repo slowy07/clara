@@ -16,12 +16,21 @@ namespace clara {
 
 /**
  * @class clara::Gates
- * @brief const singleton class that implements most commonly used gates
+ * @brief Singleton
+ *
+ * this class is singleton and provides a collection of quantum gates and operation commonly
+ * used in quantum computing. it contains gates such as Pauli-X, Pauli-Y, pauli-Z, Hadamard,
+ * S, T, CNOT, CZ, SWAP, TOFFOLI, Fredkin, and more. the class also inclueds methods to generate
+ * rotation gates, generalized Z gates, Fourier transform gates, and Identity gates for qudits.
+ * additionally, it provides methods to construct multi-parity multiple controlled gates. the gates
+ * class ensure that gate are initialized only once and canbe accessed globally using the singleton
+ * pattern
  */
 class Gates final : public internal::Singleton<const Gates> {
   friend class internal::Singleton<const Gates>;
 
  public:
+  // define various quantum gates as member variables
   cmat Id2{cmat::Identity(2, 2)};
   cmat H{cmat::Zero(2, 2)};
   cmat X{cmat::Zero(2, 2)};
@@ -39,7 +48,14 @@ class Gates final : public internal::Singleton<const Gates> {
   cmat FRED{cmat::Identity(8, 8)};
 
  private:
+  /**
+   * @brief Construct for the gates class
+   *
+   * the constructor is private and can only be accessed the Singleton pattern. it initializes
+   * the quantum gates with their corresponding matrices
+   */
   Gates() {
+    // initialize quantum gates with their corresponding matrices
     H << 1 / std::sqrt(2.), 1 / std::sqrt(2.), 1 / std::sqrt(2.), -1 / std::sqrt(2.);
     X << 0, 1, 1, 0;
     Z << 1, 0, 0, -1;
@@ -57,15 +73,19 @@ class Gates final : public internal::Singleton<const Gates> {
     TOF.block(6, 6, 2, 2) = X;
     FRED.block(4, 4, 4, 4) = SWAP;
   }
-  /*
-   * @brief default constructor
-   */
+  // DECLARE constructor private to prefent direct instantion
   ~Gates() = default;
 
  public:
   /**
-   * @brief Qubit roration of theta about the 3 dimensional real unit vector n
-   * @return rotation gate
+   * @brief qubit rotation about a 3-dimensional real unit vector (Rn) gate
+   *
+   * @param theta the angle of rtation in radians
+   * @param n A 3-dimensional vector representing the unit vector about which to rotate
+   * @return the rotation gate as 2x2 complex matrix
+   *
+   * NOTE: the rn Gate rotates the qubit about the specified 3-dimensional real unit vector
+   * by the angle theta. the function returns the rotation matrix
    */
   cmat Rn(double theta, const std::vector<double>& n) const {
     if (n.size() != 3)
@@ -77,8 +97,14 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief generalized Z gates for qudits
-   * @note define as \f$ Z = \sum_{j=0}^{D-1} \exp(2\pi \mathrm{i} j/D) |j\rangle\langle j| \f$
+   * @brief generalized Z (Zd) gate for qudits
+   *
+   * @param D the dimension of the qudit (default 2)
+   * @return the Zd gate as DxD complex matrix
+   *
+   * NOTE: the Zd gate is a generalization of the pauli-Z gate (Z) for qudit (quantum system with
+   * dimension D) its defined as \f$ Z = \sum_{j=0}^{D-1} \exp(2\pi \mathrm{i} j/D) |j\rangle\langle
+   * j| \f$. the function returns the Zd gate matrix for the specified dimension D
    */
   cmat Zd(idx D = 2) const {
     if (D == 0)
@@ -90,8 +116,14 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief fourier transform gate for qudits
-   * @note define as \f$ F = \sum_{j,k=0}^{D-1} \exp(2\pi \mathrm{i} jk/D) |j\rangle\langle k| \f$
+   * @brief Fourier transform (Fd) gate for qudit
+   *
+   * @param D the dimension of the qudit (default: 2)
+   * @return the Fd gate as a DxD complex matrix
+   *
+   * NOTE: the Fd gate is the fourier gate for qudits (quantum system with dimension D).
+   * it is defined as \f$ F = \sum_{j,k=0}^{D-1} \exp(2\pi \mathrm{i} jk/D) |j\rangle\langle k| \f$.
+   * the function returns the Fd gate matrix for the specified dimension D
    */
   cmat Fd(idx D = 2) const {
     if (D == 0)
@@ -107,9 +139,16 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief generalized X gate for qudits
-   * @note define as f$ X = \sum_{j=0}^{D-1} |j\oplus 1\rangle\langle j| \f$, ie raising operator
-   * \f$ X|j\rangle = |j\oplus 1\rangle\f$
+   * @brief generalized X (Xd) gate for qudit
+   *
+   * @param D the dimension of the qudit (default 2)
+   * @return the xd Xd gate as DxD complex matrix
+   *
+   * NOTE: the Xd gate is a generalization of the Pauli gate (x) for qudit (quantum system with
+   * dimension D) it is defined as \f$ X = \sum_{j=0}^{D-1} |j\oplus 1\rangle\langle j| \f$, where
+   * \f$ \oplus \f$ denotes addition modulo D. the Xd gate acts as the raising operatos f$
+   * X|j\rangle = |j\oplus 1\rangle \f$ the function return the Xd gate for the specified dimension
+   * D
    */
   cmat Xd(idx D = 2) const {
     if (D == 0)
@@ -118,9 +157,15 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief inditity gate
-   * @note can change the return type from complex matrix (default) by explicitly
-   * specifying the template paramter
+   * @brief identity gate (id) for qudits
+   *
+   * @tparam Derived the type of the of the return matrix (default: complex matrix)
+   * @param D the dimension of the qudit (default: 2)
+   * @return the Id gate as DxD matrix of the specified matrix for qudits (qunatum system with
+   * dimension D)
+   *
+   * NOTE: the template parameter 'Derived' can be explicitly specified to change the
+   * return type for the default complex matrix
    */
   template <typename Derived = Eigen::MatrixXcd>
   Derived Id(idx D = 2) const {
@@ -130,8 +175,20 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief generate the multi-paritite multiple contrilled A gate in matrix form
-   * @note the dimension of the gate A must match the dimension of subsys
+   * @brief generate the multi-paritite multi-controlled in matrix form
+   *
+   * @tparam Derived the type of the input matrix A and the return matrix
+   * @param A the gate matrix to be controlled
+   * @param ctrl list of control qubit indices (0-bates) for the gate
+   * @param subsy list of subsystem qubit indices for the gate
+   * @param B the total number qubits
+   * @param d the local dimension of each qubit
+   * @return the controlled gate matrix as complex matrix of the specified mtype
+   *
+   * NOTE: `CTRL` function generate the multi-paritite multi-controlled gate in matrix form
+   * the function takes an input matrix `A` (the gate to be controlled) and lists of control and
+   * subsystem qubit indices. it returns the controlled gate matrix as a complex matrix of the
+   * specfied type
    */
   template <typename Derived>
   dyn_mat<typename Derived::Scalar> CTRL(const Eigen::MatrixBase<Derived>& A,
@@ -258,9 +315,29 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief expands out clara::kron()
-   * expand out A as a matrix in a multi-paritite system. faster than using clara::kron()
-   * @return tensor product
+   * @brief expand the matrix A to a larger tensor product space
+   *
+   * @tparam Derived the type of the input matrix A and the return matrix
+   * @param A the input matrix to be expanded
+   * @param pos the position of the tensor product space to which a should expanded
+   * @param dims the dimension of the tebsor product space
+   * @return the expanded matrix as a complex matrix of the specified type
+   *
+   * NOTE: `expandout` function expand the matrix A to a larger tensor product space specified by
+   * the dimension in the `pos` parameter ditermines the position at which the expansion should be
+   * done the function returns the expanded matrix as a complex matrix of the specfied type. the
+   * input matrix A should be square, and the dimension at position in `dims` should be valid fro a
+   * tensor product space
+   *
+   * @throws clara::exception::ZeroSize if the input matrix A has zero size
+   * @throws clara::exception::DimsInvalid the dimension in `dims` are invalid
+   * @throws clara::exception::MatrixNotSquare if the input matrix A is not square
+   * @throws clara::exception::OutOfRange if the `pos` parameter is out of range for the dimension
+   * in `dims`
+   * @throws clara::exception::DimsMismatchMatrix if the dimension of A does not match dimension at
+   * position `pos in `dims`
+   *
+   * `
    */
   template <typename Derived>
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos,
@@ -315,10 +392,18 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief expand out
-   * @note the std::initializer_list overload exists because otherwise, in the
-   * degenerate case when dims only one element, the one element list is implicitly
-   * converted to the element's underlying type
+   * @brief expand the matri A to larger tensor product space using a list of dimensional
+   *
+   * @tparam Derived the type of the input matrix and the return matrix
+   * @param A the input matri to expanded
+   * @param pos the position of the tensor product space to which A should be expanded
+   * @param dims the dimensions of the tensor product space as an initializer list
+   * @return the expanded matrix a complex matrix of the specfied type
+   *
+   * NOTE: the `expandout` function expands the matrix A to larger tensor product space specfied by
+   * the number of subsystem `N`. the `pos` parameter determines the position at which the expansion
+   * should be done. the `d` parameter specifies the local dimension of each subsystem (default is 2
+   * for qubits) the function returns the expanded matrix as a complex matrix of the specfied
    */
   template <typename Derived>
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos,

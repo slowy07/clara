@@ -20,6 +20,18 @@
 
 namespace clara {
 namespace internal {
+/**
+ * @brief convert a linear index to multi-dimensional indices for a given set of dimension
+ * @param n the linear index
+ * @param numdims the number of dimension
+ * @param dims pointer to the array of dimension
+ * @param result pointer to the array to store the multi-dimensional indices
+ * NOTE: this function is used to convert a linear index to multi-dimensional indices corresponding
+ *        to a multi-dimensional array with the given dimensions. the result array will store the
+ *        multi-dimensional indices in reverse order, with the first index corresponding to the last
+ *        dimension and so on. for example, for a 3x3x3 array, the linear index 5 would be converted
+ * to multidimensional indices [2, 1, 0]
+ */
 inline void n2multiidx(idx n, idx numdims, const idx* const dims, idx* result) noexcept {
 #ifndef NDEBUG
   if (numdims > 0) {
@@ -42,8 +54,17 @@ inline void n2multiidx(idx n, idx numdims, const idx* const dims, idx* result) n
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 /**
- * multiindex to integer
- * standard lexicographical order
+ * @brief convert multi-dimensional indices to a linear indexx
+ * @param midx pointer to the array of multi-dimensional indces
+ * @param numdims the number of dimensions
+ * @param dims pointer to the array of dimensions
+ * @return the linear index corresponding the multi-dimensional
+ *
+ * NOTE: this function is used to convert multi-dimensional indices to a linear index for a
+ * multi-dimensional mutli-dimensional array with the given dimensions. the midx array array is
+ * expected to store the multi-dimensional indices in reverse order, with the first index
+ * corresponding to the last dimensions and so on. for eample a 3x3x3 array, the multi-dimensional
+ * indices [2, 1, 0] would be converted to the linear index 5
  */
 inline idx multiidx2n(const idx* const midx, idx numdims, const idx* const dims) {
 #ifndef NDEBUG
@@ -112,8 +133,14 @@ inline bool check_dims(const std::vector<idx>& dims) {
 }
 
 /**
- * check that valid dims match the dimension
- * of valid (non-zero sized) square matrix
+ * @brief check if valid dims match the dimension of a valid (non-zero sized) square matrix
+ * @param dims the vector of dimension
+ * @param A the square matrix
+ * @return true if valid dims match the dimension of the matrix, false otherwise
+ *
+ * NOTE: this function check whether the product of all dimensions in dims is equal to the number
+ *        of rows/columns in the square matrix A, the dimensions in dims are assumed to be far valid
+ * square matrix of the same dimension
  */
 template <typename Derived>
 bool check_dims_match_mat(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
@@ -216,8 +243,12 @@ inline bool check_perm(const std::vector<idx>& perm) {
 }
 
 /**
- * kronecker product of 2 matrices, preserve return type
- * internal function for the variadic tempalte function wrapper kron()
+ * @brief kronecker product of two matrices
+ * @tparam Derived1 type of the first matrix
+ * @tparam Derived2 type of the second matrix
+ * @param A the first matrix
+ * @param B the second matrix
+ * @return the kronecker product of A and B
  */
 template <typename Derived1, typename Derived2>
 dyn_mat<typename Derived1::Scalar> kron2(const Eigen::MatrixBase<Derived1>& A,
@@ -252,6 +283,14 @@ dyn_mat<typename Derived1::Scalar> kron2(const Eigen::MatrixBase<Derived1>& A,
   return result;
 }
 
+/**
+ * @brief Direct sum of two matrices
+ * @tparam Derived1 type of the first matrix
+ * @tparam Derived2 type
+ * @param A the first matrix
+ * @param B the second matrix
+ * @return the direct sum of A and B
+ */
 template <typename Derived1, typename Derived2>
 dyn_mat<typename Derived1::Scalar> dirsum2(const Eigen::MatrixBase<Derived1>& A,
                                            const Eigen::MatrixBase<Derived2>& B) {
@@ -287,8 +326,13 @@ void variadic_vector_emplace(std::vector<T>& v, First&& first, Args&&... args) {
 }
 
 /**
- * return the number of subystem (each subsystem assumed of the same
- * dimension d) from an object (ket/bra/density matrix) of size sz
+ * @brief get the number of subsystem from an object of size sz
+ * @param sz the size of the object
+ * @param d the dimension of each subsystem
+ * @return the number of subsystem
+ *
+ * NOTE: this function calculates the number of subsystem in an boject (ket/bra/density matrix) of
+ *       size, where each subsystem has the same dimension d
  */
 inline idx get_num_subsys(idx sz, idx d) {
 #ifndef NDEBUG
@@ -299,15 +343,19 @@ inline idx get_num_subsys(idx sz, idx d) {
 }
 
 /**
- * return the dimension of a subsystem (each subsystem assumed of the
- * dimension d) from an object (ket/bra/density matrix) of size sz
- * consiting of N subsystem
+ * @brief get the dimension of a sbusystem from an object of size sz consiting of N subsystem
+ * @param sz the size of the object
+ * @param N the number of subsystem
+ * @return the dimension of each subystem
+ *
+ * NOTE: this function calculates the dimension of each subsystem in an object (ket/bra/density matrix)
+ *        of size sz, consiting of N subsystem. the dimension in the object are assumed to be the same
  */
 inline idx get_dim_subsystem(idx sz, idx N) {
-  #ifndef NDEBUG
+#ifndef NDEBUG
   assert(N > 0);
   assert(sz > 0);
-  #endif // !NDEBUG
+#endif  // !NDEBUG
   if (N == 2)
     return static_cast<idx>(std::llround(std::sqrt(sz)));
   return static_cast<idx>(std::llround(std::pow(sz, 1. / N)));

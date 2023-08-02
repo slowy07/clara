@@ -7,6 +7,17 @@
 #include "idisplay.h"
 namespace clara {
 
+/**
+ * @class Timer
+ * @brief class for measuring time intervals using the C++ chrono library
+ *
+ * the timer class provides functionally for measuring time intervals using
+ * the c++ chrono library it can be used to measure the time taken for certain
+ * operations or to benchmark code performance.
+ *
+ * @tparam T the type of duration to be used to measuring time
+ * @param CLOCK_T clock type to be used
+ */
 template <typename T = std::chrono::duration<double>, typename CLOCK_T = std::chrono::steady_clock>
 class Timer : public IDisplay {
  protected:
@@ -41,9 +52,11 @@ class Timer : public IDisplay {
    */
   double tics() const noexcept { return std::chrono::duration_cast<T>(end_ - start_).count(); }
   /**
-   * @brief Duration specified by U
-   * @return duration that passed between the reset and invocation
-   * of clara::Timer::toc()
+   * @brief get the duration specified by U
+   *
+   * get the duration that passed between the reset and invocation of clara::Timer::toc()
+   * @tparam U the type of duration to be returned
+   * @return Duration that passed between that reset and invocation clara::Timer::toc()
    */
   template <typename U = T>
   U get_duration() const noexcept {
@@ -68,10 +81,10 @@ class Timer : public IDisplay {
 
  private:
   /**
-   * @brief clara::IDisplay::display() override
-   * @return write to the output stream the number of tics
-   * that passed between the reset and invocation of
-   * clara::Timer::toc()
+   * @brief override of clara::IDisplay::display()
+   * writes the output strem the number of tics that passed between the reset and invocation of
+   * clara::TImer::toc()
+   * @return the output stream
    */
   std::ostream& display(std::ostream& os) const override { return os << tics(); }
 };
