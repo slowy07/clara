@@ -1,4 +1,4 @@
-name: Clara Test
+name: Clara Test Ubuntu
 
 on:
   push:

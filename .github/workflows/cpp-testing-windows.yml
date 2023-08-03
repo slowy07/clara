@@ -1,0 +1,32 @@
+name: Clara Test Windows
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-testing-windows:
+    runs-on: windows-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+      - name: Install Eigen (windows)
+        run: choco install eigen
+
+      - name: testing windows
+        run: |
+          echo "check g++"
+          g++ --version
+          cd clara_test
+          .\run_test
+
+      - name: testing grover search (windows)
+        run:
+          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -I C:\tools\eigen\include -I C:\clara\include testing\grover_search.cpp -o grover_search.exe
+          grover_search.exe
