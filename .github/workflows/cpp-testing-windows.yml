@@ -42,4 +42,4 @@ jobs:
           mkdir build
           cd build
           cmake -f ../CMakeListsWindows.txt
-          cmake --buuild . --config Release      
+          cmake --build . --config Release      
