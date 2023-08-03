@@ -25,8 +25,13 @@ jobs:
       - name: Install Eigen
         run: | 
           sudo sudo apt-get update && sudo apt-get install -y libeigen3-dev
+      
+      - name: Install eigen on arch latest
+        run: |
           sudo pacman -Syu --noconfirm eigen
 
+      - name: configure eigen3
+        run: |
           sudo cp -r /usr/include/eigen3/Eigen /usr/local/include
  
       - name: Build and test
