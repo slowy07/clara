@@ -19,14 +19,33 @@ jobs:
       - name: Install Eigen (windows)
         run: choco install eigen
 
-      - name: testing windows
+      - name: Clara testing windows
         run: |
-          echo "check g++"
-          g++ --version
-          cd clara_test
-          .\run_test
+          echo "Initialize windows"
+          git clone https://github.com/google/googletest.git -b release-1.11.0
+          cd googletest
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release --target install
+          cd ../..
+          rmdir /s /q googletest
+
+      - name: Build clara test windows
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build . --config Release
+
+      - name: Running Clara test windows
+        run: |
+          echo "running"
+          echo "result from clara test"
+          cd build/tests
+          ./clara_testing.exe
 
       - name: testing grover search (windows)
-        run:
+        run: |
           g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -I C:\tools\eigen\include -I C:\clara\include testing\grover_search.cpp -o grover_search.exe
           grover_search.exe
