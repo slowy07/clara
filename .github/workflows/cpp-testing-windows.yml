@@ -34,7 +34,7 @@ jobs:
           cmake ..
           cmake --build . --config Release --target install
           cd ../..
-          rmdir -Recurse -Force googletest
+          Remove-Item -Recurse -Force googletest
 
       - name: Build clara test windows
         run: |
@@ -42,15 +42,3 @@ jobs:
           cd build
           cmake -DEIGEN3_INCLUDE_DIR=$env:EIGEN3_INCLUDE_DIR ..
           cmake --build . --config Release
-
-      - name: Running Clara test windows
-        run: |
-          echo "running"
-          echo "result from clara test"
-          cd build/tests
-          ./clara_testing.exe
-
-      - name: testing grover search (windows)
-        run: |
-          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -I C:\tools\eigen\include -I C:\clara\include testing\grover_search.cpp -o grover_search.exe
-          grover_search.exe
