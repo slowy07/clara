@@ -13,9 +13,9 @@ on:
 jobs:
   build-and-testing-windows:
     runs-on: windows-latest
-
+    
     env:
-      EIGEN3_INCLUDE_IDR: C:\tools\eigen\include
+      EIGEN3_INCLUDE_DIR: C:\tools\eigen\include
 
     steps:
       - name: checkout repository
@@ -23,7 +23,7 @@ jobs:
       - name: Install Eigen (windows)
         run: choco install eigen
 
-      - name: Clara testing windows
+      - name: Install googletest
         shell: powershell
         run: |
           cd clara_test
@@ -36,10 +36,10 @@ jobs:
           cmake --build . --config Release --target install
           cd ../..
           Remove-Item -Recurse -Force googletest
-
-      - name: Build clara test windows
+        
+      - name: testing
         run: |
           mkdir build
           cd build
-          cmake -DEIGEN3_INCLUDE_DIR=$env:EIGEN3_INCLUDE_DIR ..
-          cmake --build . --config Release
+          cmake -f ../CMakeListsWindows.txt
+          cmake --buuild . --config Release      
