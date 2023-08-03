@@ -12,7 +12,9 @@ on:
 
 jobs:
   build-and-testing:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest, arch-latest]
 
     steps:
       - name: Checkout repository
@@ -20,7 +22,9 @@ jobs:
 
       - name: Install Eigen
         run: | 
-          sudo apt-get install libeigen3-dev
+          sudo sudo apt-get update && sudo apt-get install -y libeigen3-dev
+          sudo pacman -Syu --noconfirm eigen
+
           sudo cp -r /usr/include/eigen3/Eigen /usr/local/include
  
       - name: Build and test
