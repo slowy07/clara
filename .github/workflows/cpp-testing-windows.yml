@@ -26,6 +26,7 @@ jobs:
       - name: Clara testing windows
         shell: powershell
         run: |
+          cd clara_test
           echo "Initialize windows"
           git clone https://github.com/google/googletest.git -b release-1.11.0
           cd googletest
