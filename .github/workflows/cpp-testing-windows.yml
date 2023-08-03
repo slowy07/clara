@@ -42,5 +42,5 @@ jobs:
           cd clara_test
           mkdir build
           cd build
-          cmake -DCMAKE_GENERATOR_FILE=../CMakeListsWindows.txt
+          cmake -DCMAKE_GENERATOR_FILE=CMakeListsWindows.txt
           cmake --build . --config Release      
