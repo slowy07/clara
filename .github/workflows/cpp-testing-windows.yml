@@ -13,16 +13,15 @@ on:
 jobs:
   build-and-testing-windows:
     runs-on: windows-latest
+
+    env:
+      EIGEN3_INCLUDE_IDR: C:\tools\eigen\include
+
     steps:
       - name: checkout repository
         uses: actions/checkout@v3
       - name: Install Eigen (windows)
         run: choco install eigen
-
-      - name: setting eigen include directory
-        run: |
-          echo "Setting EIGEN3_INCLUDE_DIR"
-          echo "::set-env name=EIGEN3_INCLUDE_DIR::C:\\tools\\eigen\\include"
 
       - name: Clara testing windows
         shell: powershell
