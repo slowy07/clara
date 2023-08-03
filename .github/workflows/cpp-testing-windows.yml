@@ -29,7 +29,7 @@ jobs:
           cmake ..
           cmake --build . --config Release --target install
           cd ../..
-          rmdir /s /q googletest
+          rd /s /q googletest
 
       - name: Build clara test windows
         run: |
