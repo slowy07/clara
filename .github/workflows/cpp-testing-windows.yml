@@ -39,6 +39,7 @@ jobs:
         
       - name: testing
         run: |
+          cd clara_test
           mkdir build
           cd build
           cmake -DCMAKE_GENERATOR_FILE=../CMakeListsWindows.txt
