@@ -20,6 +20,7 @@ jobs:
         run: choco install eigen
 
       - name: Clara testing windows
+        shell: powershell
         run: |
           echo "Initialize windows"
           git clone https://github.com/google/googletest.git -b release-1.11.0
@@ -29,7 +30,7 @@ jobs:
           cmake ..
           cmake --build . --config Release --target install
           cd ../..
-          rd /s /q googletest
+          rmdir -Recurse -Force googletest
 
       - name: Build clara test windows
         run: |
