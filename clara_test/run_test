@@ -19,14 +19,18 @@ else
     exit 1
 fi
 
-echo "Installing eigen"
-
 if [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
-    sudo apt-get install libeigen3-dev
+    if ! dpkg -l | grep libeigen; then
+        sudo apt-get install libeigen3-dev
+    fi
 elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
-    sudo pacman -S eigen
+    if ! pacman -Q eigen; then
+        sudo pacman -S eigen
+    fi
 elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-    brew install eigen
+    if ! brew list | grep eigen; then
+        brew install eigen
+    fi
 fi
 
 echo "Initializing Google Test"
