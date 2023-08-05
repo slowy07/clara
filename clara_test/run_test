@@ -1,5 +1,10 @@
 #!/bin/bash
 
+echo "
+█▀▀ █░░ ▄▀█ █▀█ ▄▀█   ▀█▀ █▀▀ █▀ ▀█▀ █ █▄░█ █▀▀
+█▄▄ █▄▄ █▀█ █▀▄ █▀█   ░█░ ██▄ ▄█ ░█░ █ █░▀█ █▄█"
+echo ""
+
 OS=$(uname -s)
 PACKAGE_MANAGER=""
 
@@ -9,7 +14,7 @@ if [[ "$OS" == "Linux" ]]; then
     elif command -v pacman >/dev/null 2>&1; then
         PACKAGE_MANAGER="pacman"
     else
-        echo "Unsupported package manager. Exiting..."
+        echo "Error: Unsupported package manager. Exiting..."
         exit 1
     fi
 elif [[ "$OS" == "Darwin" ]]; then

@@ -29,6 +29,17 @@ TEST(clara_Gates_control, Qubits) {
   EXPECT_NEAR(0, norm(CTRL4 * psi2 - res2), 1e-7);
 }
 
+TEST(clara_Gates_Xd, AllTest) {
+  for (idx D = 1; D < 10; ++D) {
+    cmat Xd = gt.Xd(D);
+    for (idx i = 0; i < D; ++i) {
+      ket psi = mket({i}, D);
+      ket res = mket({(i + 1) % D}, D);
+      EXPECT_NEAR(0, norm(res - Xd * psi), 1e-7);
+    }
+  }
+}
+
 TEST(clara_Gates_Zd, AllTest) {
   for (idx D = 1; D < 10; ++D) {
     cmat Zd = gt.Zd(D);
