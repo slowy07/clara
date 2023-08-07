@@ -16,15 +16,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Cygwin
         run: |
           choco install -y cygwin
-
-      - name: Install Eigen
-        run: |
-          cygwin_setup -q -P wget,tar,xz -P gcc-g++ make cmake libeigen-devel
+          choco install -y eigen
 
       - name: Install Google Test
         run: |
