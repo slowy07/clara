@@ -19,14 +19,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: install CUDA
+      - name: testing using Jimver cuda toolkit
+        uses: cuda-toolkit
+        with:
+          cuda: '12.1.0'
+        
+      - name: test cuda-toolkit
         run: |
-          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
-          sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
-          wget https://developer.download.nvidia.com/compute/cuda/11.3.1/local_installers/cuda-repo-ubuntu2004-11-3-local_11.3.1-465.19.01-1_amd64.deb
-          sudo dpkg -i cuda-repo-ubuntu2004-11-3-local_11.3.1-465.19.01-1_amd64.deb
-          sudo apt-key add /var/cuda-repo-ubuntu2004-11-3-local/7fa2af80.pub
-          sudo apt-get update
-          sudo apt-get -y install cuda
-          export PATH=/usr/local/cuda-11.3/bin${PATH:+:${PATH}}
-          export LD_LIBRARY_PATH=/usr/local/cuda-11.3/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+          echo "Installed cuda version is: ${{steps.cuda-toolkit.outputs.cuda}}"
+          echo "Cuda install location: ${{steps.cuda-toolkit.outputs.CUDA_PATH}}"
+          nvcc -V
