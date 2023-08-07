@@ -1,0 +1,65 @@
+name: Clara Test Windows Base
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-testing:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Cygwin
+        run: |
+          choco install -y cygwin
+
+      - name: Install Eigen
+        run: |
+          cygwin_setup -q -P wget,tar,xz -P gcc-g++ make cmake libeigen-devel
+
+      - name: Install Google Test
+        run: |
+          echo "Initializing Google Test"
+          git clone https://github.com/google/googletest.git -b release-1.11.0
+          cd googletest
+          mkdir build
+          cd build
+          cmake ..
+          make install
+
+      - name: Build and test
+        run: |
+          echo "Testing Clara"
+          cd ..
+          cd ..
+          mkdir build
+          cd build
+          cmake ..
+          make
+
+      - name: Run Clara Tests
+        run: |
+          echo ""
+          echo "Result from Clara test"
+          cd build
+          cd tests
+          ./clara_testing
+
+      - name: testing grover search
+        run: |
+          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -I /usr/include/eigen3 -I $HOME/clara/include testing/grover_search.cpp -o grover_search
+          ./grover_search
+
+      - name: testing channels
+        run: |
+          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -I /usr/include/eigen3 -I $HOME/clara/include testing/channels.cpp -o channels
+          ./channels
