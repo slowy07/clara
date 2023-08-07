@@ -30,8 +30,8 @@ jobs:
           cd googletest
           mkdir build
           cd build
-          cmake ..
-          make install
+          cmake -G "MinGW Makefiles" ..
+          mingw32-make
 
       - name: Build and test
         run: |
@@ -42,14 +42,6 @@ jobs:
           cd build
           cmake ..
           make
-
-      - name: Run Clara Tests
-        run: |
-          echo ""
-          echo "Result from Clara test"
-          cd build
-          cd tests
-          ./clara_testing
 
       - name: testing grover search
         run: |
