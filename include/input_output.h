@@ -203,16 +203,25 @@ dyn_mat<typename Derived::Scalar> load(const std::string& fname) {
 
   // read the header from file
   fin.read(fheader_.get(), header_.length());
+  // null-terminate the string
+  fheader_[header_.length()] = '\0';
   if (std::string(fheader_.get(), header_.length()) != header_) {
+    // compare with the entire string
     throw std::runtime_error("clara::load() corrupted file \"" + std::string(fname) + "\"!");
   }
 
-  idx rows, cols;
+  typename Derived::Index rows, cols;
   fin.read(reinterpret_cast<char*>(&rows), sizeof(rows));
-  fin.read(reinterpret_cast<char*>(&rows), sizeof(cols));
+  fin.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+
+  if (rows < 0 || cols < 0) {
+    throw exception::CustomException(
+        "clara::load()", "invalid matrix dimension in file \"" + std::string(fname) + "\"");
+  }
+
   dyn_mat<typename Derived::Scalar> A(rows, cols);
 
-  fin.read(reinterpret_cast<char*>(A.rows()), sizeof(typename Derived::Scalar) * rows * cols);
+  fin.read(reinterpret_cast<char*>(A.data()), sizeof(typename Derived::Scalar) * rows * cols);
   fin.close();
   return A;
 }
