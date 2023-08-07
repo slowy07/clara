@@ -36,12 +36,10 @@ jobs:
       - name: Build and test
         run: |
           echo "Testing Clara"
-          cd ..
-          cd ..
           mkdir build
           cd build
           cmake ..
-          make
+          mingw32-make
 
       - name: testing grover search
         run: |
