@@ -87,7 +87,7 @@ class States final : public internal::Singleton<const States> {
       throw exception::OutOfRange("clara::States::zero()");
     if (d == 0)
       throw exception::DimsInvalid("clara::States::zero()");
-    idx D = static_cast<idx>(std::pow(d, n));
+    idx D = static_cast<idx>(std::llround(std::pow(d, n)));
     ket result = ket::Zero(D);
     result(0) = 1;
 
@@ -123,7 +123,7 @@ class States final : public internal::Singleton<const States> {
     if (j >= d)
       throw exception::SubsysMismatchdims("clara::States::jn()");
 
-    if (j >= d)
+    if (d == 0)
       throw exception::DimsInvalid("clara::States::jn()");
 
     ket result = ket::Zero(static_cast<ket::Index>(std::pow(d, n)));

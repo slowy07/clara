@@ -67,6 +67,10 @@ class Timer : public IDisplay {
    */
   Timer(const Timer&) = default;
   /**
+   * @brief default move constructor
+   */
+  Timer(Timer&&) = default;
+  /**
    * @brief default copy assignment operator
    */
   Timer& operator=(const Timer&) = default;

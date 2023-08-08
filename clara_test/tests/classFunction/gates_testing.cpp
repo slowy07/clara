@@ -1,10 +1,39 @@
 #include <cmath>
 #include <complex>
+#include <vector>
 
 #include "../../../include/clara.h"
 #include "gtest/gtest.h"
 
 using namespace clara;
+
+const double tolerance = 1e-9;
+
+TEST(clara_gates_test, Initialization) {
+  const Gates& gates = Gates::get_instance();
+  EXPECT_EQ(gates.Id2, cmat::Identity(2, 2));
+}
+
+TEST(clara_gates_test, RotationGates) {
+  const Gates& gates = Gates::get_instance();
+  cmat rx_gate = gates.RX(0.5);
+  cmat expected_rx_gate(2, 2);
+  expected_rx_gate << std::cos(0.25), -1.0_i * std::sin(0.25), -1.0_i * std::sin(0.25),
+      std::cos(0.25);
+  EXPECT_TRUE(rx_gate.isApprox(expected_rx_gate, tolerance));
+}
+
+bool complexMatricesEqual(const cmat& A, const cmat& B, double tolerance) {
+  return (A - B).norm() <= tolerance;
+}
+
+TEST(clara_gates_test, ZdGate) {
+  const Gates& gates = Gates::get_instance();
+  cmat expectedZ2 = cmat::Zero(2, 2);
+  expectedZ2(0, 0) = 1.0;
+  expectedZ2(1, 1) = -1.0;
+  EXPECT_TRUE(complexMatricesEqual(gates.Zd(2), expectedZ2, tolerance));
+}
 
 TEST(clara_Gates_control, Qubits) {
   cmat CTRL1 = gt.CTRL(gt.X, {0}, {1}, 2);

@@ -5,11 +5,12 @@
 #include <sstream>
 
 #include "../../../include/clara.h"
+#include "../../../include/classFunction/random_devices.h"
 #include "gtest/gtest.h"
 
 using namespace clara;
 
-TEST(RandomDevicesTest, GetPrng) {
+TEST(clara_random_device_test, GetPrng) {
   std::mt19937& prng = RandomDevices::get_instance().get_prng();
   EXPECT_NE(prng.state_size, std::mt19937::default_seed);
 
@@ -17,7 +18,7 @@ TEST(RandomDevicesTest, GetPrng) {
   EXPECT_NE(random_number, 0);
 }
 
-TEST(RandomDevicesTest, loadGetPrng) {
+TEST(clara_random_device_test, loadGetPrng) {
   std::stringstream ss;
   clara::rdevs.save(ss);
   cmat A1 = rand<cmat>(4, 4);
@@ -27,7 +28,7 @@ TEST(RandomDevicesTest, loadGetPrng) {
   EXPECT_EQ(0, norm(A1 - A2));
 }
 
-TEST(RandomDevicesTest, loadGetPrngTest) {
+TEST(clara_random_device_test, loadGetPrngTest) {
   std::stringstream ss;
   clara::rdevs.save(ss);
   bigint b1 = rand(static_cast<bigint>(-100), 100);

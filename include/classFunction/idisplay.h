@@ -34,6 +34,7 @@ class IDisplay {
   IDisplay(IDisplay&&) = default;
   // copy assignment operator
   IDisplay& operator=(const IDisplay&) = default;
+  IDisplay& operator=(IDisplay&&) = default;
   // virtual destructor
   virtual ~IDisplay() = default;
 

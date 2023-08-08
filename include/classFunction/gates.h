@@ -2,6 +2,7 @@
 #define CLASSFUNCTION_GATES_H_
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <functional>
 #include <iterator>
@@ -10,6 +11,7 @@
 #include "../functions.h"
 #include "../internal/classFunction/singleton.h"
 #include "../internal/util.h"
+#include "../number_theory.h"
 #include "exception.h"
 
 namespace clara {
@@ -32,19 +34,33 @@ class Gates final : public internal::Singleton<const Gates> {
  public:
   // define various quantum gates as member variables
   cmat Id2{cmat::Identity(2, 2)};
+  // hadamard gate
   cmat H{cmat::Zero(2, 2)};
+  // pauli sigma X gate
   cmat X{cmat::Zero(2, 2)};
+  // pauli sigma Y gate
   cmat Y{cmat::Zero(2, 2)};
+  // pauli sigma Z gate
   cmat Z{cmat::Zero(2, 2)};
+  /// S gate
   cmat S{cmat::Zero(2, 2)};
+  // T gate
   cmat T{cmat::Zero(2, 2)};
 
+  // two qubit gates
+
+  // controlled-not controll target gate
   cmat CNOT{cmat::Identity(4, 4)};
+  // controlled phase gate
   cmat CZ{cmat::Identity(4, 4)};
+  // controlled not gate control gate
   cmat CNOTba{cmat::Zero(4, 4)};
+  // swap gate
   cmat SWAP{cmat::Identity(4, 4)};
 
+  // toffoli gate
   cmat TOF{cmat::Identity(8, 8)};
+  // fredkin gate
   cmat FRED{cmat::Identity(8, 8)};
 
  private:
@@ -97,6 +113,39 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
+   * @brief the 2x2 rotation matrix around the X-axis in quantum circuit
+   * @param theta the angle of rotation in radians
+   * @return the 2x2 rotation amtrix corresponding to the RX gate
+   */
+  cmat RX(double theta) const {
+    // call the Rn function to generate the rotation matrix for the RX gate
+    // the axis of rotation is {1, 0, 0} which corresponds to the X-axis
+    return Rn(theta, {1, 0, 0});
+  }
+
+  /**
+   * @brief calculates the 2x2 rotation matrix around the Y axis in quamtum circuit
+   * @param theta the angle of rotation in radians
+   * @return the 2x2 rotation matrix corresponding to the RY gate
+   */
+  cmat RY(double theta) const {
+    // call the Rn function to generate the rotation matrix for the RY gate
+    // the axis of rotation is {0, 1, 0}, which corresponds to the Y-axis
+    return Rn(theta, {0, 1, 0});
+  }
+
+  /**
+   * @brief calculate the 2x2 rotation amtrix around the Z-axis in a quantum circuit
+   * @param theta the angle of rotation in radians
+   * @return the 2x2 rotation matrix corresponding to the RZ gate
+   */
+  cmat RZ(double theta) const {
+    // call the Rn function to generate the rotation matrix for the RZ gate
+    // the axis of rotation is {0, 0, 1} which corresponds to the Z-axis
+    return Rn(theta, {0, 0, 1});
+  }
+
+  /**
    * @brief generalized Z (Zd) gate for qudits
    *
    * @param D the dimension of the qudit (default 2)
@@ -112,6 +161,28 @@ class Gates final : public internal::Singleton<const Gates> {
     cmat result = cmat::Zero(D, D);
     for (idx i = 0; i < D; ++i)
       result(i, i) = std::pow(omega(D), static_cast<double>(i));
+    return result;
+  }
+
+  /**
+   * @brief generate the SWAP gate for a given dimension
+   * the SWAP gate exchange the position of two qubits
+   * @param D dimension of the qubit
+   * @return the SWAP gate matrix of size DxDxDxD
+   *
+   * @throw DimsInvalid exception if D is invalid
+   */
+  cmat SWAPd(idx D = 2) const {
+    if (D == 0)
+      throw exception::DimsInvalid("clara::Gates::SWAPd()");
+    cmat result = cmat::Zero(D * D, D * D);
+
+#ifdef WITH_OPENMP_
+#pragma omp parallel for collapse(2)
+#endif
+    for (idx j = 0; j < D; ++j)
+      for (idx i = 0; i < D; ++i)
+        result(D * i + j, i + D * j) = 1;
     return result;
   }
 
@@ -135,6 +206,49 @@ class Gates final : public internal::Singleton<const Gates> {
     for (idx j = 0; j < D; ++j)
       for (idx i = 0; i < D; ++i)
         result(i, j) = 1 / std::sqrt(D) * std::pow(omega(D), static_cast<double>(i * j));
+    return result;
+  }
+
+  /**
+   * @brief genrate MODMUL gate for a given value a, N, and n
+   * the MODMUL gate implements modular multiplication
+   * @param a the integer value a
+   * @param N the modulis value N
+   * @param n the number of qubits (size of the gate matrix)
+   * @return the modmul gate matrix of size 2^n x 2^n
+   *
+   * @throws OutOfRange exception if a, N or n is out of valid range
+   */
+  cmat MODMUL(idx a, idx N, idx n) const {
+#ifndef DEBUG
+    assert(gcd(a, N) == 1);
+#endif  // !DEBUG
+    if (N < 3 || a >= N) {
+      throw exception::OutOfRange("clara::Gates::MODMUL()");
+    }
+    if (n < static_cast<idx>(std::ceil(std::log2(N)))) {
+      throw exception::OutOfRange("clara::Gtes::MODMUL()");
+    }
+
+    // calculate the dimension of the gate matrix
+    idx D = static_cast<idx>(std::llround(std::pow(2, n)));
+    cmat result = cmat::Zero(D, D);
+
+#ifdef WITH_OPENMP_
+#pragma omp parallel for collapse(2)
+#endif  // WITH_OPENMP_
+    // poplulate the MODMUL gate matrix using a loop
+    for (idx j = 0; j < N; ++j)
+      for (idx i = 0; i < N; ++i)
+        if (static_cast<idx>(modmul(j, a, N)) == i)
+          result(i, j) = 1;
+
+#ifdef WITH_OPENMP_
+#pragma omp parallel for
+#endif  // WITH_OPENMP_
+    // set diagonal elements of the gate matrix for remaining indices
+    for (idx i = N; i < D; ++i)
+      result(i, i) = 1;
     return result;
   }
 
@@ -412,8 +526,15 @@ class Gates final : public internal::Singleton<const Gates> {
   }
 
   /**
-   * @brief expands out
-   * @note expands out A as a matrix in a multi-paritite system
+   * @brief expand a given matrix into a larger multi-parite system
+   * @param A the input matrix to be expanded
+   * @param pos the position (index) where the matrix A will be inserted
+   * @param N the total number of parties
+   * @param d the dimension of each subsystem (default is 2)
+   * @return expanded matrix in the multi-paritite system
+   *
+   * @throws ZeroSize exception if the input matrix matrix has zero size
+   * @throws DimsInvalid exception if d is invalid
    */
   template <typename Derived>
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos, idx N,
