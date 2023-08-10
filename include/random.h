@@ -437,15 +437,16 @@ inline std::vector<cmat> randkraus(idx N, idx D) {
 
 /**
  * @brief generate random hermitian matrix
- * 
- * this function generates a random hermitian matrix of size 'D'. the generated matrix is hermitian meaning
- * that is equal to its own conjugate transpose. the matrix is constructed by first generating a random complex matrix
- * 'H' of size 'D x D' with entries uniformly distributed in the interval [0, 1], then, its is transformed into hermitian
- * matrix using formula H = H + H^†, where H^† is the conjugate transpose of 'H'
+ *
+ * this function generates a random hermitian matrix of size 'D'. the generated matrix is hermitian
+ * meaning that is equal to its own conjugate transpose. the matrix is constructed by first
+ * generating a random complex matrix 'H' of size 'D x D' with entries uniformly distributed in the
+ * interval [0, 1], then, its is transformed into hermitian matrix using formula H = H + H^†, where
+ * H^† is the conjugate transpose of 'H'
  *
  * @param D the size of the hermitian matrix, its must be a positive inetger
  * @return a random hermitian matrix of size 'DxD'
- * 
+ *
  * @throws exception::DimsInvalid if 'D' is zero, indicating an invalid input size
  *
  * @example
@@ -549,9 +550,11 @@ inline std::vector<idx> randperm(idx N) {
 /**
  * @brief generate random probability vector uniformly distributed over the probability simplex
  *
- * this function generates a random probability vector of size N, where the elements are uniformly distributed
- * over the probability simple. the probability simplex is the set of all probability vector whose elements are non-negative and sum up to 1. the function first generates N random numbers from an exponential distribution with a rate parameter of 1
- * these random numbers are then normalized to ensure that they sum up to 1, thus forming a valid probability vector
+ * this function generates a random probability vector of size N, where the elements are uniformly
+ * distributed over the probability simple. the probability simplex is the set of all probability
+ * vector whose elements are non-negative and sum up to 1. the function first generates N random
+ * numbers from an exponential distribution with a rate parameter of 1 these random numbers are then
+ * normalized to ensure that they sum up to 1, thus forming a valid probability vector
  *
  * @param N the size of the probability vector to be generated
  * @return vector representing a random probability vector of size N

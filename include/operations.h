@@ -74,7 +74,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
     Ai.push_back(powm(rA, i));
     Aidagger.push_back(powm(adjoint(rA), i));
   }
-  
+
   // total dimension
   idx D = static_cast<idx>(rstate.rows());
   // total number of subsystem
@@ -1092,7 +1092,7 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
     if (!internal::check_dims_match_mat(dims, rA))
       throw exception::DimsMismatchCvector("clara::ptranspose()");
     if (subsys.size() == dims.size())
-      return (rA * adjoiint(rA)).transpose();
+      return (rA * adjoint(rA)).transpose();
     if (subsys.size() == 0)
       return rA * adjoint(rA);
 

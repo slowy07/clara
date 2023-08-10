@@ -10,6 +10,8 @@ add_executable(
   classFunction/timer_testing.cpp
   internal/classFunction/iomanip_testing.cpp
   internal/classFunction/singleton_testing.cpp
+  internal/util_testing.cpp
+  entanglement_testing.cpp
   testing_main.cpp
   traits.cpp
   input_output_testing.cpp

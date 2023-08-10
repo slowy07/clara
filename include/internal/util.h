@@ -84,43 +84,79 @@ inline idx multiidx2n(const idx* const midx, idx numdims, const idx* const dims)
 #pragma GCC diagnostic pop
 #endif
 
-// check square matrix
+/**
+ * @brief check if a matrix is square
+ * @tparam derived Eigen matrix type
+ * @param A eigen matrix to check
+ * @return True if the matrix is square, false otherwise
+ */
 template <typename Derived>
 bool check_square_mat(const Eigen::MatrixBase<Derived>& A) {
   return A.rows() == A.cols();
 }
 
-// check whether intpu is a vector or not
+/**
+ * @brief check if a matrix is a vector
+ * @tparam Derived Eigen matrix type
+ * @param A Eigen matrix to check
+ * @return True if the matrix is a vector, false otherwise
+ */
 template <typename Derived>
 bool check_vector(const Eigen::MatrixBase<Derived>& A) {
   return A.rows() == 1 || A.cols() == 1;
 }
 
-// check wheter input is a column vector or not
+/**
+ * @brief check if a matrix is a row vector
+ * @tparam Derived Eigen matrix type
+ * @param A Eigen matrix to check
+ * @return true if type matrix is a row vector, false otherwise
+ */
 template <typename Derived>
 bool check_rvector(const Eigen::MatrixBase<Derived>& A) {
   return A.rows() == 1;
 }
 
-// check wheter input is a column vector or not
+/**
+ * @brief check if a matrix is a column vector
+ * @tparam Derived Eigen matrix type
+ * @param A eigen matrix to check
+ * @return true if the matrix is a column vector, false otherwise
+ */
 template <typename Derived>
 bool check_cvector(const Eigen::MatrixBase<Derived>& A) {
   return A.cols() == 1;
 }
 
-// check non-zero size of object that support size() function
+/**
+ * @brief check if an object has a non-zero size
+ * @tparam T type of the object
+ * @param x object to check
+ * @return true if the object has a non-zero size, false otherwise
+ */
 template <typename T>
 bool check_nonzero_size(const T& x) noexcept {
   return x.size() != 0;
 }
 
-// check that all size match
+/**
+ * @brief check if two objects have matching size
+ * @tparam T1 type of the first object
+ * @tparam T2 type of the second object
+ * @param lhs the first object to compare
+ * @param rhs the second object to compare
+ * @return true if the size matrch, false otherwise
+ */
 template <typename T1, typename T2>
 bool check_matching_sizes(const T1& lhs, const T2& rhs) noexcept {
   return lhs.size() == rhs.size();
 }
 
-// check that dims is a valid dimension vector
+/**
+ * @brief check if a vector represent valid dimension
+ * @param dims vector of dimension to check
+ * @return true if dimension are valid, false otherwise
+ */
 inline bool check_dims(const std::vector<idx>& dims) {
   if (dims.size() == 0)
     return false;
@@ -153,7 +189,16 @@ bool check_dims_match_mat(const std::vector<idx>& dims, const Eigen::MatrixBase<
   return proddim == static_cast<idx>(A.rows());
 }
 
-// check that valid dims match the dimension of valid column vector
+/**
+ * @brief check if valid dimension match dimension of a valid column vector
+ * @tparam Derived Eigen matrix type
+ * @param dims vector of dimensions to check
+ * @param A eigen matrix (column vector) to compare dimension
+ * @return true if dimension match false otherwise
+ *
+ * NOTE: this function check if the product of dimension in `dims` matches the number
+ * of rows in the column vector `A`.
+ */
 template <typename Derived>
 bool check_dims_match_cvect(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
 #ifndef NDEBUG
@@ -166,7 +211,16 @@ bool check_dims_match_cvect(const std::vector<idx>& dims, const Eigen::MatrixBas
   return proddim == static_cast<idx>(A.rows());
 }
 
-// check that valid dims mtch the dimension of valid row vector
+/**
+ * @brief check if valid dimensions mtach the dimension of valid row vector
+ * @tparam Derived Eigen matrix type
+ * @param dims vector of dimension to checks
+ * @param A Eigen matrix to compare dimension
+ * @return true if dimension match, false otherwise
+ *
+ * NOTE: function check if the product of dimension in `dims` matches the number of columns in the
+ * row vector `A`.
+ */
 template <typename Derived>
 bool check_dims_match_rvect(const std::vector<idx>& dims, const Eigen::MatrixBase<Derived>& A) {
 #ifndef NDEBUG
@@ -179,7 +233,12 @@ bool check_dims_match_rvect(const std::vector<idx>& dims, const Eigen::MatrixBas
   return proddim == static_cast<idx>(A.cols());
 }
 
-// check that all elements in valid dims equal to dim
+/**
+ * @brief check if all elements in valid dimension vector are equal to a given dimension
+ * @param dims vector of dimensions to check
+ * @param dim dimension to compare
+ * @return true if all dimension in `dims` are equal to `dim`, false otherwise
+ */
 inline bool check_eq_dims(const std::vector<idx>& dims, idx dim) noexcept {
 #ifndef NDEBUG
   assert(dims.size() > 0);
@@ -191,7 +250,16 @@ inline bool check_eq_dims(const std::vector<idx>& dims, idx dim) noexcept {
   return true;
 }
 
-// check that subsys is valid with respect to valid dims
+/**
+ * @brief check if subsystem indices are valid with respect to given diemension
+ * @param subsys vector of subsystem indices to check
+ * @param dims vector a valid dimension
+ * @param dims vector of valid dimensions
+ * @return true if subsystem indices are valid, false otherwise
+ *
+ * NOTE: the function check if each index in `subsys` is within the valid range of dimension
+ * specified by `dims`
+ */
 inline bool check_subsys_match_dims(const std::vector<idx>& subsys, const std::vector<idx>& dims) {
   if (subsys.size() > dims.size())
     return false;
@@ -208,31 +276,58 @@ inline bool check_subsys_match_dims(const std::vector<idx>& subsys, const std::v
          }) == std::end(subsyssort);
 }
 
-// check matrix is 2 x 2
+/**
+ * @brief check if matrix is 2x2 matrix
+ * @tparam Derived Eigen matrix type
+ * @param A Eigen matrix to check
+ * @return true if the matrix is 2x2 matrix, false otherwise
+ */
 template <typename Derived>
 bool check_qubit_matrix(const Eigen::MatrixBase<Derived>& A) noexcept {
   return A.rows() == 2 && A.cols() == 2;
 }
 
-// check column vector is 2 x 1
+/**
+ * @brief check if collumn vector is a 2x1 vector
+ * @tparam Derived Eigen matrix type
+ * @param A Eigen column vector to check
+ * @return true if the column vector is a 2x1 vector, false otherwise
+ */
 template <typename Derived>
 bool check_qubit_cvector(const Eigen::MatrixBase<Derived>& A) noexcept {
   return A.rows() == 2 && A.cols() == 1;
 }
 
-// check row vector 1 x 2
+/**
+ * @brief check if row vector is a 1x2 vector
+ * @tparam Derived Eigen matrix type
+ * @param A eigen row vector to check
+ * @return true if the row vector is a 1x2 vector, false otherwise
+ */
 template <typename Derived>
 bool check_qubit_rvector(const Eigen::MatrixBase<Derived>& A) noexcept {
   return A.rows() == 1 && A.cols() == 2;
 }
 
-// check row vector is 1 x 2 or 2 x 1
+/**
+ * @brief check if vector is a 1x2 or 2x1 vector
+ * @tparam Derived Eigen matrix type
+ * @param A Eigen vector to check
+ * @return true if the vector is a 1x2 or 2x1 vector, false otherwise
+ */
 template <typename Derived>
 bool check_qubit_vector(const Eigen::MatrixBase<Derived>& A) noexcept {
   return (A.rows() == 1 && A.cols() == 2) || (A.rows() == 2 && A.cols() == 1);
 }
 
-// check valid permutation
+/**
+ * @brief check if a given vector represent a valid permutation
+ * @param perm vector repersenting a permutation
+ * @return true if the vector is a valid permutation, false otherwise
+ *
+ * NOTE: this function check if the input vector contains a valid permutation of indices from 0 to
+ * (size - 1)
+ */
 inline bool check_perm(const std::vector<idx>& perm) {
   if (perm.size() == 0)
     return false;
@@ -315,10 +410,17 @@ dyn_mat<typename Derived1::Scalar> dirsum2(const Eigen::MatrixBase<Derived1>& A,
   return result;
 }
 
-// extract variadic template argyment pack into std::vector
+/**
+ * @brief extract a variadic template argument pack and emplaces them into a std::vector
+ * @tparam T type of the elements to be emplaced in the vector
+ * @param v the vector to emplace elements
+ * @param first the first element to emplace
+ * @param args the rest of the elements to emplace
+ *
+ * NOTE: this function recursively emplace the provide elements into the vector
+ */
 template <typename T>
 void variadict_vector_emplace(std::vector<T>&) {}
-
 template <typename T, typename First, typename... Args>
 void variadic_vector_emplace(std::vector<T>& v, First&& first, Args&&... args) {
   v.emplace_back(std::forward<First>(first));
@@ -348,8 +450,9 @@ inline idx get_num_subsys(idx sz, idx d) {
  * @param N the number of subsystem
  * @return the dimension of each subystem
  *
- * NOTE: this function calculates the dimension of each subsystem in an object (ket/bra/density matrix)
- *        of size sz, consiting of N subsystem. the dimension in the object are assumed to be the same
+ * NOTE: this function calculates the dimension of each subsystem in an object (ket/bra/density
+ * matrix) of size sz, consiting of N subsystem. the dimension in the object are assumed to be the
+ * same
  */
 inline idx get_dim_subsystem(idx sz, idx N) {
 #ifndef NDEBUG
@@ -361,8 +464,20 @@ inline idx get_dim_subsystem(idx sz, idx N) {
   return static_cast<idx>(std::llround(std::pow(sz, 1. / N)));
 }
 
-// implementation detasil for pretty formating
+/**
+ * @brief implementation of displaying matrix-line object with formatting options
+ *
+ * NOTE: this struct provides a methods to display a matrix-like object with customizable formatting
+ */
 struct Display_Impl_ {
+  /**
+   * @brief display a matrix-like object with customizable formatting
+   * @tparam T type of the matrix-like object
+   * @param A the matrix-like object to be displayed
+   * @param os the output stream to which the formatted matrix will be written
+   * @param chop the threshold for chopping small values
+   * @return the modified output stream
+   */
   template <typename T>
   // T must support rows(), cols(), operator()(idx, idx) const
   std::ostream& display_impl_(const T& A, std::ostream& os, double chop = clara::chop) const {

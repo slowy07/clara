@@ -527,7 +527,7 @@ inline bigint modinv(bigint a, bigint p) {
  *        prime numbers. the function perform a fermat primality test an initial check it then
  *        computes the values of 'u' and 'r' for the miller-rabin test the function uses the modpow
  *        and modmul functions for modular exponentiation and multiplication.
- *        the result of the miller-rabin test 
+ *        the result of the miller-rabin test
  *
  * @example
  * // usage of isprime function to test for primality
@@ -594,7 +594,7 @@ inline bool isprime(bigint p, idx k = 80) {
  * bigint lower_bound = 100;
  * bigint upper_bound = 1000;
  * bigint result = randprime(lower_bound, upper_bound);
-*/
+ */
 inline bigint randprime(bigint a, bigint b, idx N = 1000) {
   if (a > b)
     throw exception::OutOfRange("clara::randprime()");

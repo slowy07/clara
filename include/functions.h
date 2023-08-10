@@ -587,7 +587,7 @@ dyn_col_vect<double> svals(const Eigen::MatrixBase<Derived>& A) {
  */
 template <typename Derived>
 cmat svdU(const Eigen::MatrixBase<Derived>& A) {
-  const dyn_mat<typename Derived::Scalar>& rA = A.dervied();
+  const dyn_mat<typename Derived::Scalar>& rA = A.derived();
   // check zero-size
   if (!internal::check_nonzero_size(rA))
     throw exception::ZeroSize("clara::svdU()");
@@ -2228,6 +2228,7 @@ inline cmat bloch2rho(const std::vector<double>& r) {
   return (Id2 + r[0] * X + r[1] * Y + r[2] * Z) / 2.;
 }
 
+inline namespace literals {
 /**
  * @brief multi-partite qubit ket user-defined literal
  * this user-defined literal construct the multi partite qubit ket \f$|\mathrm{Bits}\rangle\f$
@@ -2285,7 +2286,7 @@ bra operator"" _bra() {
   // check valid multi-partite qubit state
   for (idx i = 0; i < n; ++i) {
     if (bits[i] != '0' && bits[i] != '1')
-      throw exception::OutOfRange(R"xxx(qpp::operator "" _bra())xxx");
+      throw exception::OutOfRange(R"xxx(clara::operator "" _bra())xxx");
   }
 
   // convert the binary representation to an index 'pos' in decimal (base-10) format
@@ -2316,12 +2317,13 @@ cmat operator"" _prj() {
   // check valid multi-partite qubit state
   for (idx i = 0; i < n; ++i) {
     if (bits[i] != '0' && bits[i] != '1')
-      throw exception::OutOfRange(R"xxx(qpp::operator "" _prj())xxx");
+      throw exception::OutOfRange(R"xxx(clara::operator "" _prj())xxx");
   }
 
   // using the kronecker product to construct the qubit projector
   return kron(operator""_ket<Bits...>(), operator""_bra<Bits...>());
 }
+}  // namespace literals
 
 }  // namespace clara
 

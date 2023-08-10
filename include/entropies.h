@@ -80,9 +80,22 @@ inline double entropy(const std::vector<double>& prob) {
 }
 
 /**
- * @brief renyi \f$\alpha\f$ entropy of the density matrix A,
- * for \f$\alpha\geq 0\f$
- * @return Renyi-\f$\alpha\f$ entropy, with logarithm in base 2
+ * @brief calculate the Renyi \alpha entropy of a density matrix A
+ * @tparam Derived type of the matrix-like object
+ * @param A the density matrix for which to calculate the Renyi \alpha entropy
+ * @return Renyi entropy of the density matrix A, with logarithm in base 2
+ *
+ * @throw ZeroSize if the matrix A has zero size
+ * @throw MatrixNotSquare if the matrix A is not square
+ * @throw OutOfRange if alpha is negative
+ *
+ * NOTE: The Renyi α entropy is defined for α >= 0 and is calculated as:
+ *       H_α(A) = (1 / (1 - α)) * log2(Σ(λ_i^α)),
+ *       where λ_i are the eigenvalues of A.
+ *       Special cases:
+ *       - α = 0: H_0(A) = log2(dimension of A)
+ *       - α = 1: H_1(A) = von Neumann entropy of A
+ *       - α = ∞: H_∞(A) = -log2(λ_max), where λ_max is the largest eigenvalue of A.
  */
 template <typename Derived>
 double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
@@ -97,6 +110,7 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
   if (alpha < 0)
     throw exception::OutOfRange("clara::renyi()");
 
+  // special cases: α = 0, 1, ∞
   if (alpha == 0)
     return std::log2(rA.rows());
   if (alpha == 1)
@@ -104,6 +118,7 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
   if (alpha == inifinity)
     return -std::log2(svals(rA)[0]);
 
+  // general case
   dmat sv = svals(rA);
   double result = 0;
   for (idx i = 0; i < static_cast<idx>(sv.rows()); ++i)
@@ -298,7 +313,6 @@ inline double tsallis(const std::vector<double>& prob, double q) {
  *
  * // calculate the quantum mutual information between subsystem A and B
  * double mutualInfo = qmutualinfo(densityMatrix, subsystemA, subsystemB, dimensions);
- *
  */
 template <typename Derived>
 double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& subsysA,
@@ -367,12 +381,12 @@ double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& 
  * @return double the mutual information between subsystem A and B
  *
  * @example
-  * Eigen::matrixXd densityMatrix = ...;
-  * std::vector<idx> subsystemA = {0, 1}
-  * std::vector<idx> subsystemB = {0, 2}
-  * 
-  * // calculate the mutual information between subsystem A and B
-  * double mutualInfo = qmutualinfo(densityMatrix, subsystemA, subsystemB, dimension);
+ * Eigen::matrixXd densityMatrix = ...;
+ * std::vector<idx> subsystemA = {0, 1}
+ * std::vector<idx> subsystemB = {0, 2}
+ *
+ * // calculate the mutual information between subsystem A and B
+ * double mutualInfo = qmutualinfo(densityMatrix, subsystemA, subsystemB, dimension);
  */
 template <typename Derived>
 double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& subsysA,

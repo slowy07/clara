@@ -77,7 +77,7 @@ class Gates final : public internal::Singleton<const Gates> {
     Z << 1, 0, 0, -1;
     Y << 0, -1_i, 1_i, 0;
     S << 1, 0, 0, 1_i;
-    T << 1, 0, 0, std::exp(1_i * pi / 4.0);
+    T << 1, 0, 0, std::exp(1_i * clara::pi / 4.0);
     CNOT.block(2, 2, 2, 2) = X;
     CNOTba(0, 0) = 1;
     CNOTba(1, 3) = 1;

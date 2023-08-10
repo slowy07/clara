@@ -877,7 +877,14 @@ std::tuple<std::vector<idx>, double, cmat> measure_seq(const Eigen::MatrixBase<D
   while (subsys.size() > 0) {
     auto tmp = measure(cA, Gates::get_instance().Id(dims[subsys[0]]), {subsys[0], dims});
     result.push_back(std::get<0>(tmp));
+    prob *= std::get<1>(tmp)[std::get<0>(tmp)];
+    cA = std::get<2>(tmp)[std::get<0>(tmp)];
+    dims.erase(std::next(std::begin(dims), subsys[0]));
+    subsys.erase(std::begin(subsys));
   }
+
+  std::reverse(std::begin(result), std::end(result));
+  return std::make_tuple(result, prob, cA);
 }
 
 /**
