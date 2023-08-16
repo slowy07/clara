@@ -1018,6 +1018,33 @@ double schatten(const Eigen::MatrixBase<Derived>& A, double p) {
   return std::pow(result, 1. / p);
 }
 
+/**
+ * @brief Apply a scalar function element-wise to an Eigen matrix
+ * 
+ * this function applies a scalar function element-wise to ech entry of the input matrix 'A'.
+ * the result is new matrix of the same dimensions, where each entry is the result of
+ * applying the provided scalar function to the corresponding entry in 'A'
+ * 
+ * @tparam OutputScalar the scalar type of the output matrix
+ * @tparam Derived the derived type of the input matrix 'A'
+ * @param A the input matrix to which the scalar function is applied
+ * @pram f the scalar function to be applied to each entry of the matrix
+ * @return new mtrix of the sam dimensions as 'A', where ech entry is the result of applying 'f'
+ *
+ * @throws exception::ZeroSize if the input matrix 'A' has zero size
+ *
+ * @example
+ * Eigen::MatrixXd inputMatrix(2, 2);
+ * inputMatrix << 1, 2, 3, 4;
+ * 
+ * // define scalar function that square its input
+ * auto squareFunction = [](const double& x) { return x * x; };
+ * 
+ * // apply the scalar function element-wise to the input matrix
+ * Eigen::MatrixXd result = cwise(inputMatrix, squareFunction);
+ * std::cout << "input matrix " << std::endl << clara::disp(inputMatrix) << std::endl;
+ * std::cout << "result matrix: " << std::endl << clara::disp(result) << std::endl;
+ */
 template <typename OutputScalar, typename Derived>
 dyn_mat<OutputScalar> cwise(const Eigen::MatrixBase<Derived>& A,
                             OutputScalar (*f)(const typename Derived::Scalar&)) {
