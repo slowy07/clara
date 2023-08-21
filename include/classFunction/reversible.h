@@ -1,8 +1,6 @@
 #ifndef CLASSFUNCTION_REVESIBLE_H_
 #define CLASSFUNCTION_REVESIBLE_H_
 
-#include <strings.h>
-
 #include <bitset>
 #include <cassert>
 #include <climits>
@@ -36,7 +34,8 @@ class Dynamic_bitset : public IDisplay {
   // total number of bits
   idx N_;
   // storage vector for the bitset
-  std::vector<value_type> v_;
+  // std::vector<value_type>
+  storage_type v_;
 
   /**
    * @brief calculate the index of the storage element containing a bit at the given position
@@ -313,8 +312,7 @@ class Dynamic_bitset : public IDisplay {
    * to be used as an override for the IDisplay::display function
    */
   std::ostream& display(std::ostream& os) const override {
-    idx bitset_size = this->size();
-    for (idx i = bitset_size; i-- > 0;) {
+    for (idx i = this -> size(); i-- > 0;) {
       os << this->get(i);
     }
     return os;
