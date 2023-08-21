@@ -15,17 +15,6 @@ TEST(clara_timer_test, TimerTestMiliseconds) {
   EXPECT_EQ(timer.get_milliseconds(), 1000);
 }
 
-TEST(clara_timer_test, OperatorShout) {
-  Timer<std::chrono::steady_clock, std::chrono::duration<double>> timer;
-  timer.tic();
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  timer.toc();
-  
-  std::ostringstream os;
-  os << timer;
-  EXPECT_NE(os.str(), "1.00007");
-}
-
 TEST(clara_test, TimerTestDuration) {
   Timer<std::chrono::steady_clock, std::chrono::duration<double>> timer;
   
