@@ -2,7 +2,6 @@
 
 ![Clara ubuntu test](https://img.shields.io/github/actions/workflow/status/slowy07/clara/cpp-testing.yml?style=flat-square&logo=github&label=Clara%20Ubuntu%20Test) 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/slowy07/clara/docker-testing.yml?style=flat-square&logo=docker&label=Docker%20build)
-![AppVeyor Build](https://img.shields.io/appveyor/build/slowy07/clara?style=flat-square&logo=appveyor)
 
 
 
