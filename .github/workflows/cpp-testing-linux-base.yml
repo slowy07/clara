@@ -1,0 +1,43 @@
+name: Clara Test Linux Base
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Eigen
+        run: | 
+          sudo apt-get install libeigen3-dev
+          sudo cp -r /usr/include/eigen3/Eigen /usr/local/include
+ 
+      - name: Build and test
+        run: |
+          echo "check g++ version"
+          g++ --version
+          cd clara_test
+          chmod +x run_test
+          ./run_test
+
+      - name: testing grover search
+        run: |
+          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $HOME/eigen -I $HOME/clara/include testing/grover_search.cpp -o grover_search
+          ./grover_search
+
+      - name: testing channels
+        run: |
+          g++ -pedantic -std=c++11 -Wall -Wextra -Weffc++ -fopenmp -g3 -DDEBUG -isystem $HOME/eigen -I $HOME/clara/include testing/channels.cpp -o channels
+          ./channels
+

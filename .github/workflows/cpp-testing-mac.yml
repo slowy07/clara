@@ -1,0 +1,40 @@
+name:  Clara Test On Mac Os
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-testing:
+    runs-on: macos-latest
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: install wget and configure eigen
+        run: |
+          brew install eigen
+          brew install wget
+          sudo cp -r /usr/local/Cellar/eigen/3.4.0_1/include/eigen3/Eigen /usr/local/include
+          export C_INCLUDE_PATH=/usr/local/include
+          export CPLUS_INCLUDE_PATH=/usr/local/include
+          echo "showing path"
+          ls /usr/local/include
+
+      - name: install libintl
+        run:
+          wget -P /usr/local/include https://opensource.apple.com/source/zfs/zfs-59/zfs_lib/libintl.h
+
+      - name: build googletest
+        run: |
+          g++ --version
+          cd clara_test
+          chmod +x run_test
+          ./run_test

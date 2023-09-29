@@ -7,6 +7,8 @@
 #define CLARA_UNUSED_
 #endif  // (__GNUC__ && !__CLANG__)
 
+#include <Eigen/Dense>
+#include <Eigen/SVD>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -34,41 +36,30 @@
 #include <utility>
 #include <vector>
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/SVD>
-
-// preprocessor macro
-#include "macros.h"
-
 // inter dependicies
-#include "macros.h"
-
-#include "types.h"
-#include "classFunction/exception.h"
-#include "constants.h"
-#include "traits.h"
-#include "classFunction/idisplay.h"
-#include "internal/util.h"
-#include "internal/classFunction/iomanip.h"
-#include "input_output.h"
-
-#include "internal/classFunction/singleton.h"
-#include "classFunction/init.h"
-#include "functions.h"
 #include "classFunction/codes.h"
+#include "classFunction/exception.h"
 #include "classFunction/gates.h"
-#include "classFunction/states.h"
+#include "classFunction/idisplay.h"
+#include "classFunction/init.h"
 #include "classFunction/random_devices.h"
-
-#include "statistics.h"
-#include "operations.h"
-#include "entropies.h"
-#include "entanglement.h"
-
-#include "random.h"
+#include "classFunction/states.h"
 #include "classFunction/timer.h"
+#include "constants.h"
+#include "entanglement.h"
+#include "entropies.h"
+#include "functions.h"
+#include "input_output.h"
 #include "instruments.h"
+#include "internal/classFunction/iomanip.h"
+#include "internal/classFunction/singleton.h"
+#include "internal/util.h"
 #include "number_theory.h"
+#include "operations.h"
+#include "random.h"
+#include "statistics.h"
+#include "traits.h"
+#include "types.h"
 
 // order lib
 

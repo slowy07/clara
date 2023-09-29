@@ -17,7 +17,8 @@ endif()
 
 include_directories(../include)
 # eigen
-include_directories(SYSTEM "$ENV{HOME}/eigen")
+#[[ include_directories(SYSTEM "$ENV{HOME}/eigen") ]]
+include_directories(SYSTEM "/usr/local/include")
 
 option(WITH_OPENMP "OpenMP support" ON)
 if(${WITH_OPENMP})

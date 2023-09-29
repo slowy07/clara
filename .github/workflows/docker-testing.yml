@@ -1,0 +1,20 @@
+name: Docker testing
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-and-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: testing docker build
+        run: docker build . --file docker/Dockerfile.channels --tag ${{ github.repository }}:$(date +%s)
