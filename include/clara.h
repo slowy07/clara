@@ -7,8 +7,6 @@
 #define CLARA_UNUSED_
 #endif  // (__GNUC__ && !__CLANG__)
 
-#include <Eigen/Dense>
-#include <Eigen/SVD>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -35,6 +33,9 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/SVD>
 
 // inter dependicies
 #include "classFunction/codes.h"
