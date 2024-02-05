@@ -11,6 +11,84 @@ namespace clara {
 namespace internal {
 
 /**
+ * @brief implementation for displaying matrix element in the formatted manner
+ *      this is part of the internal details of the lib
+ *      users are not expected to interact this directly
+ */
+namespace _details {
+/*
+ * @brief structure provide the implementation for displaying matrix elements in a formatted manner
+ */
+struct _Display_Impl {
+  /**
+   * @brief display the elements of the matrix in the formatted manner
+   * @tparam T the type of element int he matrix
+   * @param _A matrix to be displayed
+   * @param _os output the stream to which the matrix will be displayed
+   * @param _chop threshold balued for chopping small values
+   * @return output stream after displaying the matrix
+   */
+  template <typename T>
+  std::ostream& _display_impl(const T& _A, std::ostream& _os, double _chop = clara::chop) const {
+    std::ostringstream ostr;
+    ostr.copyfmt(_os);
+    std::vector<std::string> vstr;
+    std::string strA;
+
+    for (idx i = 0; i < static_cast<idx>(_A.rows()); ++i) {
+      for (idx j = 0; j < static_cast<idx>(_A.cols()); ++j) {
+        strA.clear();
+        ostr.clear();
+        ostr.str(std::string());
+        double re = static_cast<cplx>(_A(i, j)).real();
+        double im = static_cast<cplx>(_A(i, j)).imag();
+
+        if (std::abs(re) < _chop && std::abs(im) < _chop) {
+          ostr << "0 ";
+          vstr.push_back(ostr.str());
+        } else if (std::abs(re) < chop) {
+          ostr << im;
+          vstr.push_back(ostr.str() + "i");
+        } else if (std::abs(im) < _chop) {
+          ostr << re;
+          vstr.push_back(ostr.str() + " ");
+        } else {
+          ostr << re;
+          strA = ostr.str();
+          strA += (im > 0 ? " + " : " - ");
+          ostr.clear();
+          ostr.str(std::string());
+          ostr << std::abs(im);
+          strA += ostr.str();
+          strA += "i";
+          vstr.push_back(strA);
+        }
+      }
+    }
+    std::vector<idx> maxlengthcols(_A.cols(), 0);
+    for (idx i = 0; i < static_cast<idx>(_A.rows()); ++i) {
+      for (idx j = 0; j < static_cast<idx>(_A.cols()); ++j) {
+        if (vstr[i * _A.cols() + j].size() > maxlengthcols[i]) {
+          maxlengthcols[j] = vstr[i * _A.cols() + j].size();
+        }
+      }
+    }
+    for (idx i = 0; i < static_cast<idx>(_A.rows()); ++i) {
+      _os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right << vstr[i * _A.cols()];
+      for (idx j = 1; j < static_cast<idx>(_A.cols()); ++j) {
+        _os << std::setw(static_cast<int>(maxlengthcols[j] + 2)) << std::right
+            << vstr[i * _A.cols() + j];
+      }
+      if (i < static_cast<idx>(_A.rows()) - 1) {
+        _os << std::endl;
+      }
+    }
+    return _os;
+  }
+};
+}  // namespace _details
+
+/**
  * @class IOManipRange
  * @brief ostream manipulators for formatting range of elements
  *        from an input input iterator
@@ -114,7 +192,7 @@ class IOManipPointer : public IDisplay {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ingored "-Weffc++"
 #endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-class IOManipEigen : public IDisplay, private Display_Impl_ {
+class IOManipEigen : public IDisplay, private _details::_Display_Impl {
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic pop
 #endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
@@ -150,7 +228,7 @@ class IOManipEigen : public IDisplay, private Display_Impl_ {
    * @param os the output stream to write the formatted Eigen matrix or complex number
    * @return reference to the output stream after writting the formatted data
    */
-  std::ostream& display(std::ostream& os) const override { return display_impl_(A_, os, chop); }
+  std::ostream& display(std::ostream& os) const override { return _display_impl(A_, os, chop); }
 };
 
 }  // namespace internal
