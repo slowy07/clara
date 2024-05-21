@@ -18,34 +18,64 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef CLASSFUNCTION_INIT_H_
-#define CLASSFUNCTION_INIT_H_
 
-#include <iomanip>
-#include <iostream>
+#ifndef CLASSFUNCTION_CIRCUIT_H
+#define CLASSFUNCTION_CIRCUIT_H
 
-#include "../internal/classFunction/singleton.h"
+#include <vector>
+
+#include "codes.h"
+#include "gates.h"
+#include "idisplay.h"
 
 namespace clara {
 
-/**
- * @class Init
- * @brief singleton class for initializing the library
- *
- * the init class is a singleton class that provides initialization for the library
- * it ensures that certain configuration are set up before using other components
- * of the library
- */
-class Init final : public internal::Singleton<const Init> {
-  friend class internal::Singleton<const Init>;
+class ClaraCircuitDescription : public IDisplay {
+  const idx nq_;
+  const idx nc_;
+  const idx d_;
+  std::vector<idx> measurement_steps_{};
+  std::vector<bool> measured_;
+  idx steps_cnt_;
 
- private:
-  Init() {
-    // std::cout << std::fixed;
-    // std::cout << std::setprecision(4);
-  }
-  ~Init() {}
+ public:
+  enum class GateType {
+    NONE,
+    SINGLE,
+    TWO,
+    THREE,
+    CUSTOM,
+    FAN,
+    QFT,
+    TFQ,
+    SINGLE_CONTROL_SINGLE_TARGET,
+    SINGLE_CONTROL_MULTIPLE_TARGET,
+    MULTIPLE_CONTROL_SINGLE_TARGET,
+    MULTIPLE_CONTROL_MULTIPLE_TARGET,
+    CUSTOM_CONTROL,
+    SINGLE_CCONTROL_SINGLE_TARGET,
+    SINGLE_CCONTROL_MULTIPLE_TARGET,
+    MULTIPLE_CCONTROL_MULTIPLE_TARGET,
+    CUSTOM_CCONTROL,
+  };
+
+  enum class MeasureType {
+    NONE,
+    MEASURE_Z,
+    MASURE_V_MANY,
+  };
+
+ public:
+  class iterator {
+    friend ClaraCircuitDescription;
+    friend class ClaraCricuit;
+
+    const ClaraCircuitDescription* qcd_{nullptr};
+
+    struct value_type_ : public IDisplay {};
+  };
 };
+
 }  // namespace clara
 
-#endif  // !CLASSFUNCTION_INIT_H_
+#endif  // !CLASSFUNCTION_CIRCUIT_H
