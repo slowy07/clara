@@ -30,10 +30,11 @@ namespace clara {
  * int N = 4;
  * std::vector<double> uniform_dist = uniform(N);
  */
-inline std::vector<double> uniform(idx N) {
-  if (N == 0)
+inline std::vector<realT> uniform(idx N) {
+  if (N == 0) {
     throw exception::ZeroSize("clara::uniform()");
-  return std::vector<double>(N, 1. / N);
+  }
+  return std::vector<realT>(N, static_cast<realT>(1.) / static_cast<realT>(N));
 }
 
 /**
@@ -54,11 +55,12 @@ inline std::vector<double> uniform(idx N) {
  * dmat probXY = ...;
  * std::vector<double> marginalDistX = marginalX(probXY);
  */
-inline std::vector<double> marginalX(const dmat& probXY) {
-  if (!internal::check_nonzero_size(probXY))
-    throw exception::ZeroSize("clara::marginalX()");
+inline std::vector<realT> marginalX(const rmat& probXY) {
+  if (!internal::check_nonzero_size(probXY)) {
+    throw exception::ZeroSize("clara::marginalX()", "probXY");
+  }
 
-  std::vector<double> result(probXY.rows(), 0);
+  std::vector<realT> result(probXY.rows(), 0);
   for (idx i = 0; i < static_cast<idx>(probXY.rows()); ++i) {
     for (idx j = 0; j < static_cast<idx>(probXY.cols()); ++j) {
       result[i] += probXY(i, j);
@@ -88,9 +90,10 @@ inline std::vector<double> marginalX(const dmat& probXY) {
  * dmat probXY = ...;
  * std::vector<double> marginalDistY = marginalY(probXY);
  */
-inline std::vector<double> marginalY(const dmat& probXY) {
-  if (!internal::check_nonzero_size(probXY))
-    throw exception::ZeroSize("clara::marginalY()");
+inline std::vector<realT> marginalY(const rmat& probXY) {
+  if (!internal::check_nonzero_size(probXY)) {
+    throw exception::ZeroSize("clara::marginalY()", "probXY");
+  }
   return marginalX(probXY.transpose());
 }
 
@@ -117,16 +120,20 @@ inline std::vector<double> marginalY(const dmat& probXY) {
  * double averageX = avg(prob, X);
  */
 template <typename Container>
-double avg(const std::vector<double>& prob, const Container& X,
-           typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  if (!internal::check_nonzero_size(prob))
-    throw exception::ZeroSize("clara::avg()");
-  if (!internal::check_matching_sizes(prob, X))
-    throw exception::SizeMismatch("clara::avg()");
+double avg(const std::vector<realT>& prob, const Container& X,
+           std::enable_if_t<clara::is_iterable_v<Container>>* = nullptr) {
+  if (!internal::check_nonzero_size(prob)) {
+    throw exception::ZeroSize("clara::avg()", "prob");
+  }
+  if (!internal::check_matching_sizes(prob, X)) {
+    throw exception::SizeMismatch("clara::avg()", "prob/x");
+  }
 
-  double result = 0;
-  for (idx i = 0; i < prob.size(); ++i)
+  realT result = 0;
+  for (idx i = 0; i < static_cast<idx>(prob.size()); ++i) {
     result += prob[i] * X[i];
+  }
+
   return result;
 }
 
@@ -165,20 +172,22 @@ double avg(const std::vector<double>& prob, const Container& X,
  * double covarianceXY = cov(probMatrix, X, Y);
  */
 template <typename Container>
-double cov(const dmat& probXY, const Container& X, const Container& Y,
-           typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y))
+realT cov(const rmat& probXY, const Container& X, const Container& Y,
+          typename std::enable_if_t<clara::is_iterable_v<Container>>* = nullptr) {
+  if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y)) {
     throw exception::ZeroSize("clara::cov()");
-  if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size())
+  }
+  if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size()) {
     throw exception::SizeMismatch("clara::cov()");
+  }
   // calculate thr marginal probability distribution of 'X' and 'Y'
   std::vector<double> probX = marginalX(probXY);
   std::vector<double> probY = marginalY(probXY);
 
   // calculate the covarience between 'X' and 'Y'
-  double result = 0;
-  for (idx i = 0; i < X.size(); ++i) {
-    for (idx j = 0; j < Y.size(); ++j) {
+  realT result = 0;
+  for (idx i = 0; i < static_cast<idx>(X.size()); ++i) {
+    for (idx j = 0; j < static_cast<idx>(Y.size()); ++j) {
       result += probXY(i, j) * X[i] * Y[j];
     }
   }
@@ -209,18 +218,21 @@ double cov(const dmat& probXY, const Container& X, const Container& Y,
  * double varianceX = var(prob, x);
  */
 template <typename Container>
-double var(const std::vector<double>& prob, const Container& X,
-           typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  if (!internal::check_nonzero_size(prob))
+double var(const std::vector<realT>& prob, const Container& X,
+           typename std::enable_if_t<clara::is_iterable_v<Container>>* = nullptr) {
+  if (!internal::check_nonzero_size(prob)) {
     throw exception::ZeroSize("clara::var()");
-  if (!internal::check_matching_sizes(prob, X))
+  }
+  if (!internal::check_matching_sizes(prob, X)) {
     throw exception::SizeMismatch("clara::var()");
+  }
 
   // create an diagonal matrix with 'prob' as the diagonal elements
-  Eigen::VectorXcd diag(prob.size());
-  for (idx i = 0; i < prob.size(); ++i)
+  dyn_col_vect<realT> diag(prob.size());
+  for (idx i = 0; i < static_cast<idx>(prob.size()); ++i) {
     diag(i) = prob[i];
-  dmat probXX = diag.asDiagonal();
+  }
+  rmat probXX = diag.asDiagonal();
 
   // calculate the variance of 'X' using the covariance function 'cov'
   return cov(probXX, X, X);
@@ -254,12 +266,14 @@ double var(const std::vector<double>& prob, const Container& X,
  * double standardDeviationX = sigma(prob, X);
  */
 template <typename Container>
-double sigma(const std::vector<double>& prob, const Container& X,
-             typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  if (!internal::check_nonzero_size(prob))
+double sigma(const std::vector<realT>& prob, const Container& X,
+             typename std::enable_if_t<clara::is_iterable_v<Container>>* = nullptr) {
+  if (!internal::check_nonzero_size(prob)) {
     throw exception::ZeroSize("clara::sigma()");
-  if (!internal::check_matching_sizes(prob, X))
+  }
+  if (!internal::check_matching_sizes(prob, X)) {
     throw exception::SizeMismatch("clara::sigma()");
+  }
   // calculate the standard deviation of 'X' using the square root of its variance
   return std::sqrt(var(prob, X));
 }
@@ -293,12 +307,14 @@ double sigma(const std::vector<double>& prob, const Container& X,
  * double correlationXY = cor(probXY, X, Y);
  */
 template <typename Container>
-double cor(const dmat& probXY, const Container& X, const Container& Y,
-           typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y))
+double cor(const rmat& probXY, const Container& X, const Container& Y,
+           typename std::enable_if_t<clara::is_iterable_v<Container>>* = nullptr) {
+  if (!internal::check_nonzero_size(X) || !internal::check_nonzero_size(Y)) {
     throw exception::ZeroSize("clara::cor()");
-  if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size())
+  }
+  if (static_cast<idx>(probXY.rows()) != X.size() || static_cast<idx>(probXY.cols()) != Y.size()) {
     throw exception::SizeMismatch("clara::cor()");
+  }
   return cov(probXY, X, Y) / (sigma(marginalX(probXY), X) * sigma(marginalX(probXY), Y));
 }
 

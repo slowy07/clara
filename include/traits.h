@@ -1,111 +1,108 @@
-#ifndef TRAITS_H_
-#define TRAITS_H_
+#ifndef CLARA_TRAITS_H_
+#define CLARA_TRAITS_H_
 
+#include <charconv>
 #include <complex>
 #include <eigen3/Eigen/Dense>
 #include <type_traits>
+
 namespace clara {
 
-/**
- * @brief metafunction to create a void type for template parameter pack expansion
- */
-template <typename... Ts>
-struct make_void {
-  typedef void type;
-};
-
-/**
- * @brief alias template for the void type created by the matke_void metafunction
- */
-template <typename... Ts>
-using to_void = typename make_void<Ts...>::type;
-
-/**
- * @brief check whether T is compatible with STL-like iterable container
- * provide the constant member \a value which is equal to \a true,
- * if \a T compabitle with an iterable container.
- */
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+// supressing -Weffc++ warning for GCC version 4.8
+// diagnostic push/pop block only applies to GCC 4.8 and not Clang or ICC
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 
-/**
- * @brief check whether a type is compatible with STL-like iterable container
- *
- * this traits provideds a constant member value that is true if the type 'T' is
- * compatible with an STL-like iterable container, and false otherwise
- */
+// primary template for is_iterable - which default to false_type
+// this trait will be check whether a type T can be used in range-based looping
 template <typename T, typename = void>
 struct is_iterable : std::false_type {};
-
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+// restoring previous diagnostic settings after specialization definition
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic pop
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 
-/**
- * @brief check whether T is compatible with an STL-like iterable container
- * specialization for STL-like iterable containers
- */
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+// specialization of is_iterable - and become true_type if T are support
+// - begin() and end() methods
+// - dereferencing result of begin
+// using SFINAE via std::void_t to conditionally enable the specialization
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 template <typename T>
-struct is_iterable<T, to_void<decltype(std::declval<T>().begin()),
-                              decltype(std::declval<T>().end()), typename T::value_type>>
-    : std::true_type {};
+struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),  // check for the begin
+                                  decltype(std::declval<T>().end()),    // check for end
+                                  decltype(*(std::declval<T>().begin()))>> : std::true_type {};
 
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+// trait to be check if type derive from Eigen::MatrixBase<>
+// using to detect Eigen expression like Matrix, array, product, dll
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic pop
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 
-/**
- * @brief check whether the type is an Eigen matrix expression
- * provides the constant member value which is equal to true,
- * if the type is an Eigen matrix expression of type Eigen::MatrixBase<Derived>,
- */
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#pragma GCC diagnostic "-Weffc++"
+#endif  // defined (__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ ==
+        // 4) && (__GNUC_MINOR__ == 8)
 template <typename Derived>
-struct is_matrix_expression : std::is_base_of<Eigen::MatrixBase<typename std::decay<Derived>::type>,
-                                              typename std::decay<Derived>::type> {};
+struct is_matrix_expression
+    : std::is_base_of<Eigen::MatrixBase<std::decay_t<Derived>>, std::decay_t<Derived>> {};
 
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic pop
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 
-/**
- * @brief check whether the type is complex type
- * provide the constant member value which is equal to true,
- * if the type is a complex type.
- */
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+template <typename T>
+inline constexpr bool is_matrix_expression_v = is_matrix_expression<T>::value;
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-template <typename T>
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 struct is_complex : std::false_type {};
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
+    (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic pop
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
+        // && (__GNUC_MINOR__ == 8)
 
-/**
- * @brief check whether the type is complex number type,
- * specialization for complex type
- */
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-#pragma GCC diagnostic push
-#pragam GCC diagnostic ignored "-Weffc++"
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-template <typename T>
-struct is_complex<std::complex<T>> : std::true_type {};
-#if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-#pragma GCC diagnostic pop
-#endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
+namespace internal {
+// helper alias which to get evaluating type of an Eigen expression
+// eval_t<Derived> give the concrete matrix type result from eval the expression
+template <typename Derived>
+using eval_t = std::decay_t<typename Eigen::MatrixBase<Derived>::EvalReturnType>;
+}  // namespace internal
+
+// checking at compile-time if matrix expression has exactly one row
+// useful for enforcing dimension constraint on vectors
+template <typename Derived>
+bool constexpr is_bra_v() {
+  return (internal::eval_t<Derived>::RowsAtCompileTime == 1);
+}
+
+// check at compile-time if matrix expression has exactly one column
+template <typename Derived>
+bool constexpr is_ket_v() {
+  return (internal::eval_t<Derived>::ColsAtCompileTime == 1);
+}
 
 }  // namespace clara
 
-#endif  // !TRAITS_H_
+#endif  // !CLARA_TRAITS_H_
