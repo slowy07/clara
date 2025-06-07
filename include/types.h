@@ -6,11 +6,12 @@
 #include <eigen3/Eigen/Dense>
 #include <tuple>
 #include <type_traits>
+
 #include "traits.h"
 
 namespace clara {
 
-template<typename T>
+template <typename T>
 inline constexpr bool is_iterable_v = std::is_convertible_v<is_iterable<T>, bool>;
 
 #if defined(CLARA_IDX_DEFAULT)
@@ -31,7 +32,7 @@ using idx = unsigned long int;
 using idx = unsigned long long int;
 #else
 using idx = std::size_t;
-
+#endif
 static_assert(std::is_integral_v<idx>, "the type of idx must be integral");
 static_assert(sizeof(idx) > 1, "the type must be at least 2 bytes long");
 
@@ -80,8 +81,6 @@ using bra = dyn_row_vect<cplx>;
 using cmat = dyn_mat<cplx>;
 using rmat = dyn_mat<realT>;
 
-#endif  // defined(CLARA_IDX_DEFAULT)
-
 template <typename Scalar>
 struct dirac_t {
   std::vector<idx> dims_rows{};
@@ -95,6 +94,58 @@ struct dirac_t {
 
   bool operator!=(const dirac_t& rhs) const { return !(*this == rhs); }
 };
+
+// representing quantum ram strucure, which is essentially a vector of indices
+using quantum_ram = std::vector<idx>;
+
+/**
+ * @brief expression template type alias for eigen matrices
+ *
+ * @tparam Derived the eigen expression type being evaluated
+ *
+ * @detailes
+ *  - scalar type is extracted from the evaluated form of the derived expression
+ *  - matrix dimension are preserved at compile-time if known, otherwise to dynamic
+ */
+template <typename Derived>
+using expr_t =
+    Eigen::Matrix<typename internal::eval_t<Derived>::scalar,
+                  internal::eval_t<Derived>::RowsAtCompileTime == 1 ? 1 : Eigen::Dynamic,
+                  internal::eval_t<Derived>::ColsAtCompileTime == 1 ? 1 : Eigen::Dynamic,
+                  internal::eval_t<Derived>::Options,
+                  internal::eval_t<Derived>::RowsAtCompileTime == 1 ? 1 : Eigen::Dynamic,
+                  internal::eval_t<Derived>::ColsAtCompileTime == 1 ? 1 : Eigen::Dynamic>;
+
+/**
+ * @brief utility class to create lambda overload sets
+ *
+ * CRTP-style helper class merges multiple callable objects
+ *
+ * example:
+ * ```
+ * auto vist = overloaded {
+ *    [](int i) {
+ *        std:cout << "int: " << i;
+ *    },
+ *    [](double d) {
+ *        std::cout << "double: " << d;
+ *    }
+ * };
+ * ```
+ */
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;  // import all operator() overload from base type
+};
+
+/**
+ * @brief deduction guid for `overloaded<Ts...>`
+ *
+ * this allow the compile to deduce the template argument for `overloaded`
+ * when it is constructed with a braced list of lambdas or functors
+ */
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
 
 }  // namespace clara
 
