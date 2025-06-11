@@ -21,58 +21,30 @@
 #ifndef INTERNAL_UTIL_H_
 #define INTERNAL_UTIL_H_
 
+#include <complex.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <iomanip>
 #include <iterator>
+#include <limits>
 #include <numeric>
+#include <sstream>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "../constants.h"
+#include "../options.h"
 #include "../types.h"
-
-#if (__GNUC__ && !__clang__)
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif  // (__GNUC__ && !__clang__)
 
 namespace clara {
 namespace internal {
-/**
- * @brief convert a linear index to multi-dimensional indices for a given set of dimension
- * @param n the linear index
- * @param numdims the number of dimension
- * @param dims pointer to the array of dimension
- * @param result pointer to the array to store the multi-dimensional indices
- * NOTE: this function is used to convert a linear index to multi-dimensional indices corresponding
- *        to a multi-dimensional array with the given dimensions. the result array will store the
- *        multi-dimensional indices in reverse order, with the first index corresponding to the last
- *        dimension and so on. for example, for a 3x3x3 array, the linear index 5 would be converted
- * to multidimensional indices [2, 1, 0]
- */
-inline void n2multiidx(idx n, idx numdims, const idx* const dims, idx* result) noexcept {
-#ifndef NDEBUG
-  if (numdims > 0) {
-    idx D = 1;
-    for (idx i = 0; i < numdims; ++i)
-      D *= dims[i];
-    assert(n < D);
-  }
-#endif  // !NDEBUG
-  // no error check in release version to improve speed
-  for (idx i = 0; i < numdims; ++i) {
-    result[numdims - i - 1] = n % (dims[numdims - i - 1]);
-    n /= (dims[numdims - i - 1]);
-  }
-}
 
-#if (__GNUC__ && !__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
 /**
  * @brief convert multi-dimensional indices to a linear indexx
  * @param midx pointer to the array of multi-dimensional indces
@@ -86,23 +58,54 @@ inline void n2multiidx(idx n, idx numdims, const idx* const dims, idx* result) n
  * corresponding to the last dimensions and so on. for eample a 3x3x3 array, the multi-dimensional
  * indices [2, 1, 0] would be converted to the linear index 5
  */
-inline idx multiidx2n(const idx* const midx, idx numdims, const idx* const dims) {
-#ifndef NDEBUG
+template <typename T, typename U = T, typename V = T>
+[[clara::critical]] void n2multiidx(T n, std::size_t numdims, const U* const dims,
+                                    V* result) noexcept {
+#ifndef DEBUG
+  if (numdims > 0) {
+    idx D = 1;
+    for (std::size_t i = 0; i < numdims; ++i) {
+      D *= dims[i];
+    }
+    assert(static_cast<idx>(n) < D);
+  }
+#endif  // !DEBUG
+  for (std::size_t i = 0; i < numdims; ++i) {
+    result[numdims - i - 1] = n % (dims[numdims - i - 1]);
+    n /= (dims[numdims - i - 1]);
+  }
+}
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(_INTEL_COMPILER)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(_INTEL_COMPILER)
+
+template <typename V, typename T = V, typename U = T>
+[[clara::critical]] T multiidx2n(const V* const midx, std::size_t numdims,
+                                 const U* const dims) noexcept {
   assert(numdims > 0);
-#endif  // !NDEBUG
-  idx part_prod[2 * maxn];
-  idx result = 0;
+  assert(numdims < internal::maxn);
+
+#ifndef DEBUG
+  for (std::size_t i = 0; i < numdims; ++i) {
+    assert(static_cast<idx>(midx[i]) < dims[i]);
+  }
+#endif  // !DEBUG
+  T part_prod[2 * internal::maxn];
+  T result = 0;
   part_prod[numdims - 1] = 1;
-  for (idx i = 1; i < numdims; i++) {
-    part_prod[numdims - i - 1] = part_prod[numdims - i] * dims[numdims - i];
+  for (std::size_t i = 1; i < numdims; ++i) {
+    part_prod[numdims - i - 1] = part_prod[numdims - 1] * dims[numdims - 1];
     result += midx[numdims - i - 1] * part_prod[numdims - i - 1];
   }
   return result + midx[numdims - 1];
 }
 
-#if (__GNUC__ && !__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #pragma GCC diagnostic pop
-#endif
+#endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 
 /**
  * @brief check if a matrix is square
@@ -485,77 +488,140 @@ inline idx get_dim_subsystem(idx sz, idx N) {
 }
 
 /**
- * @brief implementation of displaying matrix-line object with formatting options
+ * @brief safety computes a^b as integer type T
  *
- * NOTE: this struct provides a methods to display a matrix-like object with customizable formatting
+ * using floating point internally and round the res to the nearest integer,
+ * then cast it to the target type T
+ *
+ * @tparam T type of base and result
+ * @param a exponent
+ * @return integer result of a^b, rounded to nearest integer
  */
-struct Display_Impl_ {
-  /**
-   * @brief display a matrix-like object with customizable formatting
-   * @tparam T type of the matrix-like object
-   * @param A the matrix-like object to be displayed
-   * @param os the output stream to which the formatted matrix will be written
-   * @param chop the threshold for chopping small values
-   * @return the modified output stream
-   */
-  template <typename T>
-  // T must support rows(), cols(), operator()(idx, idx) const
-  std::ostream& display_impl_(const T& A, std::ostream& os, double chop = clara::chop) const {
-    std::ostringstream ostr;
-    ostr.copyfmt(os);
-    std::vector<std::string> vstr;
-    std::string strA;
+template <typename T /*= idx*/>
+inline T safe_pow(T a, T b) {
+  return static_cast<T>(std::llround(std::pow(a, b)));
+}
 
-    for (idx i = 0; i < static_cast<idx>(A.rows()); ++i) {
-      for (idx j = 0; j < static_cast<idx>(A.cols()); ++j) {
-        strA.clear();
-        ostr.clear();
-        ostr.str(std::string{});
-
-        // convert to complex
-        double re = static_cast<cplx>(A(i, j)).real();
-        double im = static_cast<cplx>(A(i, j)).imag();
-        if (std::abs(re) < chop && std::abs(im) < chop) {
-          ostr << "0 ";
-          vstr.push_back(ostr.str());
-        } else if (std::abs(re) < chop) {
-          ostr << im;
-          vstr.push_back(ostr.str() + "i");
-        } else if (std::abs(im) < chop) {
-          ostr << re;
-          vstr.push_back(ostr.str() + " ");
-        } else {
-          ostr << re;
-          strA = ostr.str();
-          strA += (im > 0 ? " + " : " - ");
-          ostr.clear();
-          ostr.str(std::string());
-          ostr << std::abs(im);
-          strA += ostr.str();
-          strA += "i";
-          vstr.push_back(strA);
-        }
-      }
+/**
+ * @brief return zero if absolute value of x is below
+ *
+ * @tparam T type of unput value
+ * @param x input value
+ * @param chop threshold below which x is considered zero
+ * @return zero if |x| < chop else x
+ */
+template <typename T>
+T abs_float_or_cplx_chop(const T& x, realT chop) {
+  // applies chopping to floating-point type (IEEE754 / IEC 559)
+  if constexpr (std::numeric_limits<T>::is_iec559) {
+    if (std::abs(x) < chop) {
+      return 0;
     }
-    // determine the maximum length of the entries in each column
-    std::vector<idx> maxlengthcols(A.cols(), 0);
-    for (idx i = 0; i < static_cast<idx>(A.rows()); i++)
-      for (idx j = 0; j < static_cast<idx>(A.cols()); ++j)
-        if (vstr[i * A.cols() + j].size() > maxlengthcols[j])
-          maxlengthcols[j] = vstr[i * A.cols() + j].size();
-
-    for (idx i = 0; i < static_cast<idx>(A.rows()); i++) {
-      os << std::setw(static_cast<int>(maxlengthcols[0])) << std::right << vstr[i * A.cols()];
-      for (idx j = 1; j < static_cast<idx>(A.cols()); ++j)
-        os << std::setw(static_cast<int>(maxlengthcols[j] + 2)) << std::right
-           << vstr[i * A.cols() + j];
-
-      if (i < static_cast<idx>(A.rows()) - 1)
-        os << std::endl;
-    }
-    return os;
   }
-};
+  return x;
+}
+
+/**
+ * @brief check if the given value is negative
+ *
+ * @tparam T arithmetic type
+ * @param t value to check
+ * @return true if t < 0, false otherwise
+ */
+template <typename T>
+constexpr bool is_negative(T t) {
+  return t < 0;
+}
+
+/**
+ * @brief convert real number to its string representation with full precision
+ *
+ * using max representable digits to ensure no loss of information during convert
+ *
+ * @tparam T arithmetic type
+ * @param d number to convert
+ * @return string representation of d
+ */
+template <typename T>
+std::string real2text(T d) {
+  std::stringstream ss;
+  // set precision into max_digits10 to preserve all significant digits
+  ss << std::setprecision(std::numeric_limits<T>::max_digits10);
+  ss << d;
+  return ss.str();
+}
+
+/*
+ * @brief convert a string to real number
+ *
+ * wrap around `std::strtod` for simplicity
+ *
+ * @tparam T target arithmetic
+ * @param str string to parse
+ * @return converted value
+ */
+template <typename T>
+T text2real(const std::string& str) {
+  return std::strtod(str.c_str(), nullptr);
+}
+
+/**
+ * @brief check wether the multi-index representation of i matches specified digit
+ *
+ * convert linear index `i` into a multi-index using system dimension
+ * then compare specific position (subsystem) againts expected digit value
+ *
+ * @param i linear index to testing
+ * @param dits expected digit value at selected subsystem
+ * @param dims vector of dimnesion size for each subsystem
+ * @return true if all selected subsystem match the expected digits
+ */
+inline bool idx_contains_dits(idx i, const std::vector<idx>& dits, const std::vector<idx>& subsys,
+                              const std::vector<idx>& dims) {
+  idx Cstorage[internal::maxn];     // fixed size array to storing multi-index
+  idx n = dims.size();              // total number of subsystem
+  idx subsys_size = subsys.size();  // number of subsystem to check
+
+  // convert linear index to multi-index based on dimension
+  internal::n2multiidx(i, n, dims.data(), Cstorage);
+  std::vector<idx> midx_i(Cstorage, Cstorage + n);
+
+  // compare result into vector for easier access
+  for (idx m = 0; m < subsys_size; m++) {
+    if (midx_i[subsys[m]] != dits[m]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+* @brief project a quantum state into specific computational basis state
+*
+* set all component of the ket `psi` to zero except those matching the specified
+* in the given subsystem. used in filtering quantum state measurement or projection
+*
+* @tparam Derived internal type for dynamic vector expression
+* @param psi quantum state vector to project
+* @param dits desired digit value in selected subsystem
+* @param dims dimension of each subsystem
+* @param D total hilbert space dimension
+* @return modified state vector with non-matching components set to zero
+*/
+template <typename Derived>
+dyn_col_vect<Derived> project_ket_on_dits(dyn_col_vect<Derived> psi, const std::vector<idx>& dits,
+                                          const std::vector<idx>& subsys,
+                                          const std::vector<idx>& dims, idx D) {
+#ifdef CLARA_OPENMP
+#pragma omp parallel for
+#endif  // CLARA_OPENMP
+  for (idx i = 0; i < D; ++i) {
+    if (!idx_contains_dits(i, dits, subsys, dims)) {
+      psi(i) = 0; // zero out non-matching component
+    }
+  }
+  return psi;
+}
 
 }  // namespace internal
 }  // namespace clara
