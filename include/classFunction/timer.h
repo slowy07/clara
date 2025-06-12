@@ -38,22 +38,27 @@ namespace clara {
  * @tparam T the type of duration to be used to measuring time
  * @param CLOCK_T clock type to be used
  */
-template <typename Clock = std::chrono::steady_clock, typename Duration = std::chrono::duration<double>>
+template <typename T = std::chrono::duration<double>, typename CLOCK_T = std::chrono::steady_clock>
 class Timer : public IDisplay {
  protected:
-  typename Clock::time_point start_, end_;
+  typename CLOCK_T::time_point start_, end_;
 
  public:
   /**
    * @brief Construct an instance with the current time as starting point
    */
-  Timer() noexcept : start_{Clock::now()}, end_{start_} {}
+  Timer() noexcept : start_{CLOCK_T::now()}, end_{start_} {}
+
+  ~Timer() override = default;
 
   /**
    * @brief Reset the chronometer
    * Reset the starting/ending point to the current time
    */
-  void tic() noexcept { start_ = end_ = Clock::now(); }
+  void tic() noexcept {
+    start_ = end_ = CLOCK_T::now();
+    return *this;
+  }
 
   /**
    * @brief Stops the chronometer
@@ -61,16 +66,33 @@ class Timer : public IDisplay {
    * @return Current instance
    */
   const Timer& toc() noexcept {
-    end_ = Clock::now();
+    end_ = CLOCK_T::now();
     return *this;
   }
 
   /**
-   * @brief Get the duration of the time interval
-   * @return Duration that has elapsed since the last call to tic() or reset()
+   * @brief return the elapsed time as a duration of type U
+   *
+   * this function allow the caller to get the measured duration in any desired
+   * resultion such as nanosecond, microsecond, millisecond, or second
+   *
+   * @tparam U type of duration to return (default = same as internal type T)
+   * @return elapsed time as a duration of type U
    */
-  Duration get_duration() const noexcept {
-    return std::chrono::duration_cast<Duration>(end_ - start_);
+  template <typename U = T>
+  U get_duration() const noexcept {
+    return std::chrono::duration_cast<U>(end_ - start_);
+  }
+
+  /**
+   * @return the elapsed time as floating-point count of internal duration unit
+   *
+   * useful when you want a simple numeric value instead of a duration object
+   *
+   * @return elapsed time in units of the internal duration type T as double
+   */
+  double tics() const noexcept {
+    return static_cast<double>(std::chrono::duration_cast<T>(end_ - start_).count());
   }
 
   /**
@@ -78,39 +100,6 @@ class Timer : public IDisplay {
    * @return Number of seconds that have elapsed since the last call to tic() or reset()
    */
   double get_seconds() const noexcept { return get_duration().count(); }
-
-  /**
-   * @brief Get the duration in milliseconds
-   * @return Number of milliseconds that have elapsed since the last call to tic() or reset()
-   */
-  double get_milliseconds() const noexcept {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(get_duration()).count();
-  }
-
-  /**
-   * @brief Default copy constructor
-   */
-  Timer(const Timer&) = default;
-
-  /**
-   * @brief Default move constructor
-   */
-  Timer(Timer&&) = default;
-
-  /**
-   * @brief Default copy assignment operator
-   */
-  Timer& operator=(const Timer&) = default;
-
-  /**
-   * @brief Default move assignment operator
-   */
-  Timer& operator=(Timer&&) = default;
-
-  /**
-   * @brief Default virtual destructor
-   */
-  virtual ~Timer() = default;
 
  private:
   /**
