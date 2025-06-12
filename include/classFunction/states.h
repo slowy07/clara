@@ -141,13 +141,37 @@ class States final : public internal::Singleton<const States> {
     if (n == 0)
       throw exception::OutOfRange("clara::States::jn()");
     if (j >= d)
-      throw exception::SubsysMismatchdims("clara::States::jn()");
+      throw exception::SubsysMismatchDims("clara::States::jn()");
 
     if (d == 0)
       throw exception::DimsInvalid("clara::States::jn()");
 
     ket result = ket::Zero(static_cast<ket::Index>(std::pow(d, n)));
     result(multiidx2n(std::vector<idx>(n, j), std::vector<idx>(n, d))) = 1;
+    return result;
+  }
+
+  /**
+   * @brief generate computational basis state |j> in D-dimensional hilber space
+   *
+   * @param j index of the basis state. must be less than D
+   * @param D dimension of the hilbert space
+   * @return a normalized basis state vector |j> of size D
+   */
+  ket j(idx j, idx D = 2) const {
+    // validating input dimension
+    if (j >= D) {
+      throw exception::SubsysMismatchDims("clara::States::j()", "D/j");
+    }
+
+    if (D == 0) {
+      throw exception::DimsInvalid("clara::States::j()", "D");
+    }
+
+    // create zero-initialized ket vector of size D
+    ket result = ket::Zero(D);
+    // set j-th component to 1 for representing |j>
+    result(j) = 1;
     return result;
   }
 
@@ -220,7 +244,7 @@ class States final : public internal::Singleton<const States> {
     pGHZ = GHZ * GHZ.adjoint();
     pW = W * W.adjoint();
   }
-  ~States() = default;
+  ~States() override = default;
 };
 
 }  // namespace clara
