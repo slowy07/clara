@@ -21,12 +21,16 @@
 #ifndef CLASSFUNCTION_GATES_H_
 #define CLASSFUNCTION_GATES_H_
 
+#include <complex.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <functional>
 #include <iterator>
 #include <numeric>
+#include <optional>
+#include <vector>
 
 #include "../functions.h"
 #include "../internal/classFunction/singleton.h"
@@ -124,8 +128,9 @@ class Gates final : public internal::Singleton<const Gates> {
    * by the angle theta. the function returns the rotation matrix
    */
   cmat Rn(double theta, const std::vector<double>& n) const {
-    if (n.size() != 3)
+    if (n.size() != 3) {
       throw exception::CustomException("clara::Gates::Rn()", "n is not a 3-dimensional vector!");
+    }
     cmat result(2, 2);
     result =
         std::cos(theta / 2) * Id2 - 1_i * std::sin(theta / 2) * (n[0] * X + n[1] * Y + n[2] * Z);
@@ -176,11 +181,13 @@ class Gates final : public internal::Singleton<const Gates> {
    * j| \f$. the function returns the Zd gate matrix for the specified dimension D
    */
   cmat Zd(idx D = 2) const {
-    if (D == 0)
+    if (D == 0) {
       throw exception::DimsInvalid("clara::Gates::Zd()");
+    }
     cmat result = cmat::Zero(D, D);
-    for (idx i = 0; i < D; ++i)
+    for (idx i = 0; i < D; ++i) {
       result(i, i) = std::pow(omega(D), static_cast<double>(i));
+    }
     return result;
   }
 
@@ -223,9 +230,11 @@ class Gates final : public internal::Singleton<const Gates> {
 #ifdef WITH_OPENMP_
 #pragma omp parallel for collapse(2)
 #endif  // DEBUG
-    for (idx j = 0; j < D; ++j)
-      for (idx i = 0; i < D; ++i)
+    for (idx j = 0; j < D; ++j) {
+      for (idx i = 0; i < D; ++i) {
         result(i, j) = 1 / std::sqrt(D) * std::pow(omega(D), static_cast<double>(i * j));
+      }
+    }
     return result;
   }
 
@@ -239,7 +248,7 @@ class Gates final : public internal::Singleton<const Gates> {
    *
    * @throws OutOfRange exception if a, N or n is out of valid range
    */
-  cmat MODMUL(idx a, idx N, idx n) const {
+  [[clara::parallel]] cmat MODMUL(idx a, idx N, idx n) const {
 #ifndef DEBUG
     assert(gcd(a, N) == 1);
 #endif  // !DEBUG
@@ -258,17 +267,22 @@ class Gates final : public internal::Singleton<const Gates> {
 #pragma omp parallel for collapse(2)
 #endif  // WITH_OPENMP_
     // poplulate the MODMUL gate matrix using a loop
-    for (idx j = 0; j < N; ++j)
-      for (idx i = 0; i < N; ++i)
-        if (static_cast<idx>(modmul(j, a, N)) == i)
+    for (idx j = 0; j < N; ++j) {
+      for (idx i = 0; i < N; ++i) {
+        if (static_cast<idx>(modmul(static_cast<bigint>(j), static_cast<bigint>(a),
+                                    static_cast<bigint>(N))) == i) {
           result(i, j) = 1;
+        }
+      }
+    }
 
 #ifdef WITH_OPENMP_
 #pragma omp parallel for
 #endif  // WITH_OPENMP_
     // set diagonal elements of the gate matrix for remaining indices
-    for (idx i = N; i < D; ++i)
+    for (idx i = N; i < D; ++i) {
       result(i, i) = 1;
+    }
     return result;
   }
 
@@ -285,8 +299,13 @@ class Gates final : public internal::Singleton<const Gates> {
    * D
    */
   cmat Xd(idx D = 2) const {
-    if (D == 0)
+    if (D == 0) {
       throw exception::DimsInvalid("clara::Gates::Xd()");
+    }
+
+    if (D == 2) {
+      return X;
+    }
     return Fd(D).inverse() * Zd(D) * Fd(D);
   }
 
@@ -303,9 +322,172 @@ class Gates final : public internal::Singleton<const Gates> {
    */
   template <typename Derived = Eigen::MatrixXcd>
   Derived Id(idx D = 2) const {
-    if (D == 0)
+    if (D == 0) {
       throw exception::DimsInvalid("clara::Gates::Id()");
+    }
     return Derived::Identity(D, D);
+  }
+
+  /**
+   * @brief embed a small unitary matrix into a larger hilbert space a quantum gate
+   *
+   * this function applies quantum gate `A` specific subsystem (`target`) within
+   * composite system describe by `dims`, resulting matrix acts as identity on all
+   * other subsystem
+   *
+   * @tparam Derived type derived from Eigen::MatrixBase
+   * @param A gate matrix to embed, must be square and match the dimension of the target
+   * @param target indices of subsystem on which the gate acts
+   * @param dims vector of dimension for each subsystem in the full system
+   * @return embedded gate matrix of size D x D where D = product(dims)
+   */
+  template <typename Derived>
+  dyn_mat<typename Derived::Scalar> GATE(const Eigen::MatrixBase<Derived>& A,
+                                         const std::vector<idx>& target,
+                                         const std::vector<idx>& dims) const {
+    // get derived type (for access row, cols)
+    const dyn_mat<typename Derived::Scalar>& rA = A.derived();
+
+    if (!internal::check_nonzero_size(rA)) {
+      throw exception::ZeroSize("clara::Gates::GATE()", "A");
+    }
+
+    if (!internal::check_square_mat(rA)) {
+      throw exception::MatrixNotSquare("clara::Gates::GATE()", "A");
+    }
+
+    if (target.empty()) {
+      throw exception::ZeroSize("clara::Gates::GATE()", "target");
+    }
+
+    if (!internal::check_dims(dims)) {
+      throw exception::DimsInvalid("clara::Gates::GATE()", "dims");
+    }
+
+    if (!internal::check_subsys_match_dims(target, dims)) {
+      throw exception::SubsysMismatchDims("clara::Gates::GATE()", "dims/target");
+    }
+
+    // compute total dimension of the gate's subspace (product of target subsystem)
+    using Index = typename dyn_mat<typename Derived::Scalar>::Index;
+
+    idx DA = 1;
+    for (idx elem : target) {
+      DA *= dims[elem];
+    }
+
+    // make sure input matrix matching the expected gate dimension
+    if (rA.rows() != static_cast<Index>(DA)) {
+      throw exception::MatrixMismatchSubsys("clara::Gates::GATE()", "A/dims/target");
+    }
+
+    // internal variable using for indexing
+    idx Cdims[internal::maxn];     // full system dimension
+    idx midx_row[internal::maxn];  // multi-index for row
+    idx midx_col[internal::maxn];  // multi-index for column
+
+    idx CdimsA[internal::maxn];     // dimension of target subsystem
+    idx midxA_row[internal::maxn];  // row indices for gate subspace
+    idx midxA_col[internal::maxn];  // column indices for gate subspace
+
+    idx CdimsA_bar[internal::maxn];   // dimension of non-target subsystem
+    idx Csubsys_bar[internal::maxn];  // indices of non-target subsystem
+    idx midx_bar[internal::maxn];     // multi-index for non-target subspace
+
+    idx n = dims.size();                   // total number subsystem
+    idx n_gate = target.size();            // number of subsystem acted upon
+    idx n_subsys_bar = n - target.size();  // number of untouched subsystem
+
+    // get indices subsystem not acted upon (complement or target)
+    std::vector<idx> subsys_bar = complement(target, n);
+
+    // total dimension of entire system
+    idx D = prod(dims);
+    idx Dsubsys_bar = 1;
+
+    for (idx elem : subsys_bar) {
+      Dsubsys_bar *= dims[elem];
+    }
+
+    // copy untargeted indices and dimension for easier access
+    std::copy(subsys_bar.begin(), subsys_bar.end(), std::begin(Csubsys_bar));
+    for (idx k = 0; k < n_subsys_bar; ++k) {
+      CdimsA_bar[k] = dims[subsys_bar[k]];
+      midx_bar[k] = 0;  // initialize to zero
+    }
+
+    // initialize dimension and indices for target subsystem
+    for (idx k = 0; k < n_subsys_bar; ++k) {
+      CdimsA_bar[k] = dims[subsys_bar[k]];
+      midx_bar[k] = 0;
+    }
+
+    for (idx k = 0; k < n_gate; ++k) {
+      midxA_row[k] = midxA_col[k] = 0;
+      CdimsA[k] = dims[target[k]];
+    }
+
+    // start with an identity matrix of full system size
+    dyn_mat<typename Derived::Scalar> result = dyn_mat<typename Derived::Scalar>::Identity(D, D);
+
+    // loop over all configuration of the untouched subsystem
+    for (idx i = 0; i < Dsubsys_bar; ++i) {
+      internal::n2multiidx(i, n_subsys_bar, CdimsA_bar, midx_bar);
+      // loop over rows of the gate matrix
+      for (idx a = 0; a < DA; ++a) {
+        internal::n2multiidx(a, n_gate, CdimsA, midxA_row);
+
+        // set row indices in the full system
+        for (idx k = 0; k < n_gate; ++k) {
+          midx_row[target[k]] = midxA_row[k];
+        }
+
+        // set bar indices (untouched subsystem) in both row and cols
+        for (idx k = 0; k < n_subsys_bar; ++k) {
+          midx_row[Csubsys_bar[k]] = midx_col[Csubsys_bar[k]] = midx_bar[k];
+        }
+
+        // loop over all columns of the gate matrix
+        for (idx b = 0; b < DA; ++b) {
+          internal::n2multiidx(b, n_gate, CdimsA, midxA_col);
+
+          // set column indices in the full system
+          for (idx k = 0; k < n_gate; ++k) {
+            midx_col[target[k]] = midxA_col[k];
+          }
+
+          // compute linear indices and assign gate value
+          result(internal::multiidx2n(midx_row, n, Cdims),
+                 internal::multiidx2n(midx_col, n, Cdims)) = rA(a, b);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * @brief overloaded version GATE for system with uniform subystem dimension
+   *
+   * this function provide a simplified interface to the full `GATE(...)` function
+   * by assuming that all subystem in the system have the same dimension `d`
+   *
+   * @tparam Derived type from Eigen::MatrixBase
+   * @param A gate matrix to embed, must be square and match dimension of the target
+   * @param target indices of subystem on which the gate acts
+   * @param n total_number total number of subsystem in composite system
+   * @param d dimension of each subsystem (default: 2 for qubits)
+   * @return embedded gate matrix of size d^n x d^n
+   */
+  template <typename Derived>
+  dyn_mat<typename Derived::Scalar> GATE(const Eigen::MatrixBase<Derived>& A,
+                                         const std::vector<idx>& target, idx n, idx d = 2) const {
+    if (d == 0) {
+      throw exception::DimsInvalid("clara::Gates::GATE()", "d");
+    }
+
+    // forward to the general version GATE that acc vector of dimension
+    return GATE(A, target, std::vector<idx>(n, d));
   }
 
   /**
@@ -325,126 +507,112 @@ class Gates final : public internal::Singleton<const Gates> {
    * specfied type
    */
   template <typename Derived>
-  dyn_mat<typename Derived::Scalar> CTRL(const Eigen::MatrixBase<Derived>& A,
-                                         const std::vector<idx>& ctrl,
-                                         const std::vector<idx>& subsys, idx N, idx d = 2) const {
+  dyn_mat<typename Derived::Scalar> CTRL(
+      const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& ctrl,
+      const std::vector<idx>& target, idx n, idx d = 2,
+      std::optional<std::vector<idx>> shift = std::nullopt) const {
     const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
     // check matrix zero size
-    if (!internal::check_nonzero_size(rA))
+    if (!internal::check_nonzero_size(rA)) {
       throw exception::ZeroSize("clara::Gates::CTRL()");
+    }
 
     // check square matrix
-    if (!internal::check_square_mat(rA))
+    if (!internal::check_square_mat(rA)) {
       throw exception::MatrixNotSquare("clara::Gates::CTRL()");
+    }
 
     // check list zero size
-    if (ctrl.size() == 0)
+    if (ctrl.empty()) {
       throw exception::ZeroSize("clara::Gates::CTRL()");
-    if (subsys.size() == 0)
-      throw exception::ZeroSize("clara::Gates::CTRL()");
+    }
 
     // check out of range
-    if (N == 0)
+    if (n == 0) {
       throw exception::OutOfRange("clara::Gates::CTRL()");
+    }
     // check valid local dimension
-    if (d == 0)
+    if (d == 0) {
       throw exception::OutOfRange("clara::Gates::CTRL()");
+    }
 
-    // control gate subsystem
     std::vector<idx> ctrlgate = ctrl;
-    ctrlgate.insert(std::end(ctrlgate), std::begin(subsys), std::end(subsys));
-    std::sort(std::begin(ctrlgate), std::end(ctrlgate));
+    std::sort(ctrlgate.begin(), ctrlgate.end());
+    ctrlgate.insert(ctrlgate.end(), target.begin(), target.end());
 
-    std::vector<idx> dims(N, d);
-
-    /**
-     * check that control + gats subystem is valid
-     * with respect to local dimensions
-     */
-    if (!internal::check_subsys_match_dims(ctrlgate, dims))
-      throw exception::SubsysMismatchdims("clara::Gates::CTRL()");
-
-    // check that subsys list match the dimension of the matrix
-    using Index = typename dyn_mat<typename Derived::Scalar>::Index;
-    if (A.rows() != static_cast<Index>(std::llround(std::pow(d, subsys.size()))))
-      throw exception::DimsMismatchMatrix("clara::Gates::CTRL()");
-
-    idx Cdims[maxn];
-    idx midx_row[maxn];
-    idx midx_col[maxn];
-
-    idx CdimsA[maxn];
-    idx midxA_row[maxn];
-    idx midxA_col[maxn];
-
-    idx Cdims_bar[maxn];
-    idx Csubsys_bar[maxn];
-    idx midx_bar[maxn];
-
-    idx Ngate = subsys.size();
-    idx Nctrl = ctrl.size();
-    idx Nsubsys_bar = N - ctrlgate.size();
-    idx D = static_cast<idx>(std::llround(std::pow(d, N)));
-    idx DA = static_cast<idx>(rA.rows());
-    idx Dsubsys_bar = static_cast<idx>(std::llround(std::pow(d, Nsubsys_bar)));
-
-    // compute the complementary subystem of control gate w.r.t
-    std::vector<idx> subsys_bar = complement(ctrlgate, N);
-    std::copy(std::begin(subsys_bar), std::end(subsys_bar), std::begin(Csubsys_bar));
-
-    for (idx k = 0; k < N; ++k) {
-      midx_row[k] = midx_col[k] = 0;
-      Cdims[k] = d;
-    }
-
-    for (idx k = 0; k < Nsubsys_bar; ++k) {
-      Cdims_bar[k] = d;
-      midx_bar[k] = 0;
-    }
-
-    for (idx k = 0; k < Ngate; ++k) {
-      midxA_row[k] = midxA_col[k] = 0;
-      CdimsA[k] = d;
-    }
-
-    dyn_mat<typename Derived::Scalar> result = dyn_mat<typename Derived::Scalar>::Identity(D, D);
-    dyn_mat<typename Derived::Scalar> Ak;
-
-    // run over complement indexes
-    for (idx i = 0; i < Dsubsys_bar; ++i) {
-      internal::n2multiidx(i, Nsubsys_bar, Cdims_bar, midx_bar);
-      for (idx k = 0; k < d; ++k) {
-        Ak = powm(rA, k);
-        // run ober the subsys row multi-index
-        for (idx a = 0; a < DA; ++a) {
-          // get the subsys row multi-index
-          internal::n2multiidx(a, Ngate, CdimsA, midxA_row);
-          /**
-           * construct the result row multi-index
-           * first the ctrl part (equal for both row and colum)
-           */
-          for (idx c = 0; c < Nctrl; ++c)
-            midx_row[ctrl[c]] = midx_col[ctrl[c]] = k;
-          // then the complement part
-          for (idx c = 0; c < Nsubsys_bar; ++c)
-            midx_row[Csubsys_bar[c]] = midx_col[Csubsys_bar[c]] = midx_bar[c];
-          // then the subsys part
-          for (idx c = 0; c < Ngate; ++c)
-            midx_row[subsys[c]] = midxA_row[c];
-          // run over the subsys column multi-index
-          for (idx b = 0; b < DA; ++b) {
-            internal::n2multiidx(b, Ngate, CdimsA, midxA_col);
-            // construct the result column multi-index
-            for (idx c = 0; c < Ngate; ++c)
-              midx_col[subsys[c]] = midxA_col[c];
-            // write the value
-            result(internal::multiidx2n(midx_row, N, Cdims),
-                   internal::multiidx2n(midx_col, N, Cdims)) = Ak(a, b);
-          }
+    for (idx elem_ctrl : ctrl) {
+      for (idx elem_target : target) {
+        if (elem_ctrl == elem_target) {
+          throw exception::OutOfRange("clara::Gates::CTRL()", "ctrl/target");
         }
       }
     }
+
+    std::vector<idx> dims(n, d);
+    if (!internal::check_subsys_match_dims(ctrlgate, dims)) {
+      throw exception::SubsysMismatchDims("clara::Gates::CTRL()", "ctrl/dims");
+    }
+
+    idx DA = rA.rows();
+    if (DA != internal::safe_pow(d, target.size())) {
+      throw exception::MatrixMismatchSubsys("clara::Gates::CTRL()", "A/d/target");
+    }
+
+    if (shift.has_value()) {
+      for (idx& elem : shift.value()) {
+        if (elem >= d) {
+          throw exception::OutOfRange("clara::Gates::CTRL()", "shift");
+        }
+        elem = d - elem;
+      }
+    }
+
+    if (!shift.has_value()) {
+      shift = std::vector<idx>(ctrl.size(), 0);
+    }
+
+    idx D = prod(dims);
+    idx Dctrl = internal::safe_pow(d, ctrl.size());
+    idx ctrl_size = ctrl.size();
+
+    dyn_mat<typename Derived::Scalar> result = dyn_mat<typename Derived::Scalar>::Zero(D, D);
+
+    std::vector<idx> ctrl_bar = complement(ctrlgate, n);
+    std::vector<idx> ctrlgate_bar = complement(ctrlgate, n);
+    idx Dctrlagate_bar = 1;
+    for (idx elem : ctrlgate_bar) {
+      Dctrlagate_bar *= dims[elem];
+    }
+
+    dyn_mat<typename Derived::Scalar> Id_ctrlgate_bar =
+        dyn_mat<typename Derived::Scalar>::Identity(Dctrlagate_bar, Dctrlagate_bar);
+
+    dyn_mat<typename Derived::Scalar> prj_bar =
+        dyn_mat<typename Derived::Scalar>::Identity(Dctrl, Dctrl);
+
+    for (idx k = 0; k < d; ++k) {
+      std::vector<idx> ctrl_shift = shift.value();
+
+      std::transform(ctrl_shift.begin(), ctrl_shift.end(), ctrl_shift.begin(),
+                     [k, d](idx elem) { return (elem + k) % d; });
+
+      idx pos = multiidx2n(ctrl_shift, std::vector<idx>(ctrl_size, d));
+
+      dyn_mat<typename Derived::Scalar> prj_mat =
+          dyn_mat<typename Derived::Scalar>::Zero(Dctrl, Dctrl);
+
+      prj_bar -= prj_mat;
+
+      dyn_mat<typename Derived::Scalar> Ak = powm(rA, k);
+      dyn_mat<typename Derived::Scalar> gate = kron(prj_mat, Ak);
+
+      result += GATE(gate, ctrlgate, n, d);
+    }
+
+    result +=
+        GATE(kron(prj_bar, dyn_mat<typename Derived::Scalar>::Identity(DA, DA)), ctrlgate, n, d);
+
     return result;
   }
 
@@ -477,52 +645,28 @@ class Gates final : public internal::Singleton<const Gates> {
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos,
                                               const std::vector<idx>& dims) const {
     const dyn_mat<typename Derived::Scalar>& rA = A.derived();
-    if (!internal::check_nonzero_size(rA))
+    if (!internal::check_nonzero_size(rA)) {
       throw exception::ZeroSize("clara::Gates::expandout()");
+    }
     // check that dims is a valid dimension vector
-    if (!internal::check_dims(dims))
+    if (!internal::check_dims(dims)) {
       throw exception::DimsInvalid("clara::Gates::expandout()");
+    }
     // check square matrix
-    if (!internal::check_square_mat(rA))
+    if (!internal::check_square_mat(rA)) {
       throw exception::MatrixNotSquare("clara::Gates::expandout()");
+    }
 
     // check that position is valid
-    if (pos > dims.size() - 1)
+    if (pos > dims.size() - 1) {
       throw exception::OutOfRange("clara::Gates::expandout()");
+    }
     // check that dims[pos] match dimension of A
-    if (static_cast<idx>(rA.rows()) != dims[pos])
+    if (static_cast<idx>(rA.rows()) != dims[pos]) {
       throw exception::DimsMismatchMatrix("clara::Gates::expandout()");
-
-    idx D = std::accumulate(std::begin(dims), std::end(dims), static_cast<idx>(1),
-                            std::multiplies<idx>());
-    dyn_mat<typename Derived::Scalar> result = dyn_mat<typename Derived::Scalar>::Identity(D, D);
-    idx Cdims[maxn];
-    idx midx_row[maxn];
-    idx midx_col[maxn];
-
-    for (idx k = 0; k < dims.size(); k++) {
-      midx_row[k] = midx_col[k] = 0;
-      Cdims[k] = dims[k];
     }
 
-    // run over the main diagonal multi-index
-    for (idx i = 0; i < D; ++i) {
-      internal::n2multiidx(i, dims.size(), Cdims, midx_row);
-      // get column multi_index
-      internal::n2multiidx(i, dims.size(), Cdims, midx_col);
-      // run over the gate row multi-index
-      for (idx a = 0; a < static_cast<idx>(rA.rows()); ++a) {
-        midx_row[pos] = a;
-        // run over the gate column multi-index
-        for (idx b = 0; b < static_cast<idx>(rA.cols()); ++b) {
-          // construct the total column multi-index
-          midx_col[pos] = b;
-          result(internal::multiidx2n(midx_row, dims.size(), Cdims),
-                 internal::multiidx2n(midx_col, dims.size(), Cdims)) = rA(a, b);
-        }
-      }
-    }
-    return result;
+    return GATE(A, {pos}, dims);
   }
 
   /**
@@ -542,7 +686,7 @@ class Gates final : public internal::Singleton<const Gates> {
   template <typename Derived>
   dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos,
                                               const std::initializer_list<idx>& dims) const {
-    return this->expandout(A, pos, std::vector<idx>(dims));
+    return expandout(A, pos, std::vector<idx>(dims));
   }
 
   /**
@@ -557,16 +701,93 @@ class Gates final : public internal::Singleton<const Gates> {
    * @throws DimsInvalid exception if d is invalid
    */
   template <typename Derived>
-  dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos, idx N,
+  dyn_mat<typename Derived::Scalar> expandout(const Eigen::MatrixBase<Derived>& A, idx pos, idx n,
                                               idx d = 2) const {
-    if (!internal::check_nonzero_size(A))
+    if (!internal::check_nonzero_size(A)) {
       throw exception::ZeroSize("clara::Gates::expandout()");
+    }
     // check valid dims
-    if (d == 0)
+    if (d == 0) {
       throw exception::DimsInvalid("clara::Gates::expandout()");
+    }
 
-    std::vector<idx> dims(N, d);
-    return this->expandout(A, pos, dims);
+    return expandout(A, pos, std::vector<idx>(n, d));
+  }
+
+  /**
+   * @brief return the name of a quantum gate based on its matrix representation
+   *
+   * utility compare the given unitary matrix `U` againts known standard quantum gates
+   * if a match is found, the corresponding gate name is return as an `std::optional<std::string>`
+   * if not match is found, an empty optional is returned
+   *
+   * @param U complex matrix representing a quantum gate
+   * @return std::optional<std::string> name of the matchied gate
+   */
+  std::optional<std::string> get_name(const cmat& U) const {
+    // validate input matrix non-empty
+    if (!internal::check_nonzero_size(U)) {
+      throw exception::ZeroSize("clara::Gates::gate_name()", "U");
+    }
+
+    if (!internal::check_square_mat(U)) {
+      return {};  // return empty if matrix not square
+    }
+
+    // get dimension of the matrix (number of row / columns)
+    const idx D = static_cast<idx>(U.rows());
+
+    // handle switch-case for handle different gate dimensions
+    switch (D) {
+      case 2:
+        // single-qubit gate (dimension 2x2)
+        if (U == Id2) {
+          return "Id2";  // identity gate
+        } else if (U == H) {
+          return "H";  // hadamard gate
+        } else if (U == X) {
+          return "X";  // pauli-x gate
+        } else if (U == Y) {
+          return "Y";  // pauli-y gate
+        } else if (U == Z) {
+          return "Z";  // pauli-z gate
+        } else if (U == S) {
+          return "S";  // phase gate
+        } else if (U == adjoint(S)) {
+          return "S+";  // adjoint of phase gate
+        } else if (U == T) {
+          return "T";  // pi / 8 gate
+        } else if (U == adjoint(T)) {
+          return "T+";  // adjoint of T gate
+        } else {
+          return {};
+        }
+      case 4:
+        // two-qubit gate (dimension 4x4)
+        if (U == CNOT) {
+          return "CNOT";  // controlled-not gate
+        } else if (U == CZ) {
+          return "CZ";  // controlled-z gate
+        } else if (U == CNOTba) {
+          return "CNOTba";  // iverse cnot (target -> control)
+        } else if (U == SWAP) {
+          return "SWAP";  // swap gate
+        } else {
+          return {};
+        }
+      case 8:
+        // three-qubit gate (dimension 8x8)
+        if (U == TOF) {
+          return "TOF";  // toffoli gate
+        } else if (U == FRED) {
+          return "FRED";  // fredkin gate
+        } else {
+          return {};
+        }
+
+      default:
+        return {};
+    }
   }
 };
 
