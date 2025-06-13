@@ -28,10 +28,12 @@
 #include <ostream>
 #include <random>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../types.h"
 #include "idisplay.h"
+#include "interface_json.h"
 
 namespace clara {
 
@@ -52,31 +54,58 @@ class Dynamic_bitset : public IDisplay {
   // number of storage elements needed
   idx storage_size_;
   // total number of bits
-  idx N_;
+  idx n_;
   // storage vector for the bitset
   // std::vector<value_type>
-  storage_type v_;
+  std::vector<value_type> v_;
 
   /**
    * @brief calculate the index of the storage element containing a bit at the given position
    * @param pos the position of the bit
    * @return the index of the storage element
    */
-  idx index_(idx pos) const { return pos / (sizeof(value_type) * CHAR_BIT); }
+  inline static idx index_(idx pos) { return pos / (sizeof(value_type) * CHAR_BIT); }
   /**
    * @brief calculate the offset within the storage element fora bit at the given position
    * @param pos the position of the bit
    * @return the offset within the storage element
    */
-  idx offset_(idx pos) const { return pos % (sizeof(value_type) * CHAR_BIT); }
+  inline static idx offset_(idx pos) { return pos % (sizeof(value_type) * CHAR_BIT); }
 
  public:
   /**
    * @brief constructor to create a dynamic bitset of a given size
    * @param N the total number of bits in the bitset
    */
-  Dynamic_bitset(idx N)
-      : storage_size_{N / (sizeof(value_type) * CHAR_BIT) + 1}, N_{N}, v_(storage_size_) {}
+  explicit Dynamic_bitset(idx n)
+      : storage_size_{static_cast<idx>(n / (sizeof(value_type) * CHAR_BIT) + 1)},
+        n_{n},
+        v_(storage_size_) {}
+
+  /**
+   * @brief construct dynamic bitset from string of binary digits
+   *
+   * string is interpreted as a squance of binary characters,
+   * where each character representing single bit, by default '0' is interpreted
+   * as false (bit 0), and '1' as true (bit 1)
+   *
+   * @param str string contains binary digit character
+   * @param zero cahracter used to representing 0-bit
+   * @param one character used to representing a 1-bit
+   */
+  explicit Dynamic_bitset(std::string str, char zero = '0', [[maybe_unused]] char one = '1')
+      : Dynamic_bitset{static_cast<idx>(str.size())} {
+    idx n = str.size();
+    // iterate over each character in the string
+    for (idx i = 0; i < n; ++i) {
+      // ensure each character is either zero or one
+      assert(str[i] == zero || str[i] == one);
+      // set the bit at position (n - 1 - i) to match string value
+      // this makse sure the first character in the string treated
+      // as the MSB
+      this->set(n - 1 - i, str[i] != zero);
+    }
+  }
 
   /**
    * @brief get a reference to the internal stroage internal container
@@ -87,7 +116,7 @@ class Dynamic_bitset : public IDisplay {
    * @brief get a reference to the internal storage container
    * @return const reference to the internal storage vector
    */
-  idx size() const noexcept { return N_; }
+  idx size() const noexcept { return n_; }
   /**
    * @brief get the number of storage elements used in the bitset
    * @return the number of storage elements
@@ -113,7 +142,10 @@ class Dynamic_bitset : public IDisplay {
    * @param pos position of the bit to retrieve
    * @return the value of the bit at the given position
    */
-  bool get(idx pos) const noexcept { return 1 & (v_[index_(pos)] >> offset_(pos)); }
+  bool get(idx pos) const noexcept {
+    assert(pos < size());
+    return 1 & (v_[index_(pos)] >> offset_(pos));
+  }
 
   /**
    * @brief check if not bits are set in the bitset
@@ -149,7 +181,7 @@ class Dynamic_bitset : public IDisplay {
    * @brief check if any bits are set in the bitset
    * @return true if any bit is set, false if no bits are set
    */
-  bool any() const noexcept { return !(this->none()); }
+  bool any() const noexcept { return !(none()); }
 
   /**
    * @brief set the value of the bit at the specified position
@@ -299,26 +331,18 @@ class Dynamic_bitset : public IDisplay {
    * characters for bit values 0 and 1. the resulting string is constructed by iterating through the
    * bits in the Dynamic_bitset and appending the correspoinding character to the string
    */
-  template <class CharT = char, class Traits = std::char_traits<CharT>,
-            class Allocator = std::allocator<CharT>>
-  std::basic_string<CharT, Traits, Allocator> to_string(CharT zero = CharT('0'),
-                                                        CharT one = CharT('1')) const {
-    std::basic_string<CharT, Traits, Allocator> result;
-    idx bitset_size = this->size();
+  virtual std::string to_string(char zero = '0', char one = '1') const {
+    std::string result;
+    idx bitset_size = size();
     result.resize(bitset_size);
 
-    // iterate through the bits in reverse order and append characters to the string
     for (idx i = bitset_size; i-- > 0;) {
-      if (!this->get(i)) {
-        result[bitset_size - i - 1] = zero;
-      } else {
-        result[bitset_size - i - 1] = one;
-      }
+      result[bitset_size - i - 1] = get(i) ? one : zero;
     }
     return result;
   }
 
- private:
+ protected:
   /**
    * @brief display the binary representation of Dynamic_bitset to an output stream
    * @param os the output stream to write the binary repersentation to
@@ -331,12 +355,7 @@ class Dynamic_bitset : public IDisplay {
    * order and writes each bit's value (0 or 1) to the output stream. this function is intended
    * to be used as an override for the IDisplay::display function
    */
-  std::ostream& display(std::ostream& os) const override {
-    for (idx i = this -> size(); i-- > 0;) {
-      os << this->get(i);
-    }
-    return os;
-  }
+  std::ostream& display(std::ostream& os) const override { return os << this->to_string(); }
 };
 
 /**
@@ -345,115 +364,108 @@ class Dynamic_bitset : public IDisplay {
  * NOTE: this class extend the functionally of Dynamic_bitset to repersent a circuit of bit.
  * it includes a struct Gate_count to keep track of different gate counts within the circuit
  */
-class Bit_circuit : public Dynamic_bitset {
+class Bit_circuit : public Dynamic_bitset, public InterfaceJson {
+  std::unordered_map<std::string, idx> count_{};
+  std::unordered_map<std::string, idx> depth_{};
+  Dynamic_bitset bNOT_, bCNOT_, bSWAP_, bTOF_, bFRED_, btotal_;
+
  public:
   /**
-   * @brief a structure to keep track of gate counts within the circuit
+   * @brief construct a bit with specified number of zero initialized
+   *
+   * initialized all operation counters and tracker to default value
+   *
+   * @param n number of bit in the circuit
    */
-  struct Gate_count {
-    // count of NOT Gates
-    idx NOT = 0;
-    // alias for the count of X gates (same as NOT gates)
-    idx& X = NOT;
-
-    // count CNOT gates
-    idx CNOT = 0;
-    // count SWAP gates
-    idx SWAP = 0;
-    // count FREDKIN gates
-    idx FRED = 0;
-    // count of toffoli gates
-    idx TOF = 0;
-  } gate_count{};
+  explicit Bit_circuit(idx n)
+      : Dynamic_bitset{n}, bNOT_{n}, bCNOT_{n}, bSWAP_{n}, bTOF_{n}, bFRED_{n}, btotal_{n} {}
 
   /**
-   * @brief constructor that forwards arguments to the base Dynamic_bitset constructor
-   * @tparam Args parameter for the Dynamic_bitset constructor
-   * @param args erguments to forward to the Dynamic_bitset constructor
+   * @brief construct a Bit_circuit from a binary string
+   *
+   * parse a string where each character representing a bit value
+   * and initialize the bitset accordingly
    */
-  using Dynamic_bitset::Dynamic_bitset;
-  Bit_circuit(const Dynamic_bitset& dynamic_bitset) : Dynamic_bitset{dynamic_bitset} {}
-  Bit_circuit& X(idx pos) {
-    this->flip(pos);
-    ++gate_count.X;
-    return *this;
-  }
-  Bit_circuit& NOT(idx pos) {
-    this->flip(pos);
-    ++gate_count.NOT;
-    return *this;
-  }
-
-  /**
-   * @brief apply CNOT gate to the circuit
-   * @param pos A vector two position: control bit and target bit
-   * @return a reference to the modified Bit_circuit
-   */
-  Bit_circuit& CNOT(const std::vector<idx>& pos) {
-    v_[index_(pos[1])] ^= (1 & (v_[index_(pos[0])] >> offset_(pos[0]))) << offset_(pos[1]);
-    ++gate_count.CNOT;
-    return *this;
-  }
-
-  /**
-   * @brief apply toffoli gate to the circuit
-   * @param pos A vector of three positions: control bit 1, control bit 2, and target bit
-   * @return reference to the modified Bit_circuit
-   */
-  Bit_circuit& TOF(const std::vector<idx>& pos) {
-    v_[index_(pos[2])] ^= ((1 & (v_[index_(pos[1])] >> offset_(pos[1]))) &
-                           (1 & (v_[index_(pos[0])] >> offset_(pos[0]))))
-                          << offset_(pos[2]);
-    ++gate_count.TOF;
-    return *this;
-  }
-
-  /**
-  * @brief apply a SWAP gate to the circuit
-  * @param pos A vector of two position to SWAP
-  * @return A reference to the modified Bit_circuit
-  *
-  * NOTE: function swaps the value of the two specified position in the circuit
-  */
-  Bit_circuit& SWAP(const std::vector<idx>& pos) {
-    if (this->get(pos[0]) != this->get(pos[1])) {
-      this->X(pos[0]);
-      this->X(pos[0]);
-      this->X(pos[1]);
+  explicit Bit_circuit(std::string str, char zero = '0', [[maybe_unused]] char one = '1')
+      : Dynamic_bitset{static_cast<idx>(str.size())},
+        bNOT_{size()},
+        bCNOT_{size()},
+        bSWAP_{size()},
+        bTOF_{size()},
+        bFRED_{size()},
+        btotal_{size()} {
+    idx n = str.size();
+    for (idx i = 0; i < n; ++i) {
+      assert(str[i] == zero || str[i] == one);
+      this->set(i, str[i] != zero);
     }
-    ++gate_count.SWAP;
+  }
+
+  /**
+   * @brief construct a Bit_circuit from binary string
+   *
+   * parsing string where each character representing bit value
+   * the leftomst character correponding to the first bit
+   *
+   * @param str string containign binary digit char
+   * @param zero character used to representing 0bit
+   * @param one character used to representing a 1bit
+   */
+  explicit Bit_circuit(const Dynamic_bitset& dynamic_bitset)
+      : Dynamic_bitset{dynamic_bitset},
+        bNOT_{size()},
+        bCNOT_{size()},
+        bSWAP_(size()),
+        bTOF_{size()},
+        bFRED_{size()},
+        btotal_{size()} {}
+
+  /**
+   * @brief convenience wrapper for apply not gate
+   *
+   * @param i index of the bit to flip
+   * @return reference to this object for method chaining
+   */
+  Bit_circuit& X(idx i) {
+    assert(i < size());
+    NOT(i);
     return *this;
   }
 
   /**
-  * @brief apply FREDKIN gate to the circuit
-  * @param pos A vector of three position: control bit, target bit 1, target bit 2
-  * @return reference to the modified Bit_circuit
-  *
-  * NOTE: if the control bit is set, this function swaps the values of target bits 1 and 2 in the
-  * circuit
-  */
-  Bit_circuit& FRED(const std::vector<idx>& pos) {
-    if (this->get(pos[0])) {
-      this->SWAP({pos[1], pos[2]});
+   * @brief destructor
+   *
+   * virtual to allow safe inheritance and polymorphism
+   */
+  ~Bit_circuit() override = default;
+
+  /**
+   * @brief applies NOT gate to specified bit
+   *
+   * flips the bit at index `i`, updateing the NOT tracker and icrement counter
+   *
+   * @param i index of the bit to flip
+   * @return reference to this object for method chaining
+   */
+  Bit_circuit& NOT(idx i) {
+    assert(i < size());
+    flip(i);  // flip bit at position i
+
+    ++count_["NOT"];
+    ++count_[__FILE__ "__total__"];
+
+    if (count_["NOT"] == 1) {
+      depth_["NOT"] = 1;
     }
-    ++gate_count.FRED;
-    return *this;
-  }
 
-  /**
-  * @brief reset the circuit and gat counts to their initial state
-  * @return reference to the modified Bit_circuit
-  *
-  * NOTE: this function reset all bits in the circuit to zero and reset the gate count
-  * to zero
-  */
-  Bit_circuit& reset() noexcept {
-    gate_count.NOT = gate_count.X = 0;
-    gate_count.CNOT = gate_count.SWAP = 0;
-    gate_count.FRED = gate_count.TOF = 0;
-    Dynamic_bitset::reset();
+    bNOT_.flip(i);
 
+    // if the bit has been reset after being flip, increment global depth
+    if (!bNOT_.get(i)) {
+      bNOT_ = Dynamic_bitset{n_};      // reset tracker
+      btotal_.set(i);                  // mark as part of new depth layer
+      ++depth_[__FILE__ "__total__"];  // increment total depth counter
+    }
     return *this;
   }
 };
