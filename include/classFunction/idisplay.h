@@ -32,10 +32,10 @@
 #include "../options.h"
 namespace clara {
 /**
- * @class IDisplay
+ * @class InterfaceDisplay
  * @brief Interface for displaying objects
  *
- * the IDisplay class provides as interface for object that need to be displayed in custom way
+ * the InterfaceDisplay class provides as interface for object that need to be displayed in custom way
  * derived classes must override the `display()` function to perform the actual stream extraction
  * processing
  */

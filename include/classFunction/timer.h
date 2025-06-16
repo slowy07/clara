@@ -39,7 +39,7 @@ namespace clara {
  * @param CLOCK_T clock type to be used
  */
 template <typename T = std::chrono::duration<double>, typename CLOCK_T = std::chrono::steady_clock>
-class Timer : public IDisplay {
+class Timer : public InterfaceDisplay {
  protected:
   typename CLOCK_T::time_point start_, end_;
 
@@ -103,7 +103,7 @@ class Timer : public IDisplay {
 
  private:
   /**
-   * @brief Override of clara::IDisplay::display()
+   * @brief Override of clara::InterfaceDisplay::display()
    * Writes the output stream the number of seconds that have elapsed since the last call to
    * clara::Timer::toc()
    * @return The output stream

@@ -12,7 +12,7 @@ namespace internal {
  * this class model step that does nothing when get execute, it useful as placeholder,
  * default step, or representing idle state in sequence operation
  */
-struct CircuitNOPStep : IDisplay {
+struct CircuitNOPStep : InterfaceDisplay {
   /**
    * @brief compare two CircuitNOPStep object for equality
    *
@@ -37,7 +37,7 @@ struct CircuitNOPStep : IDisplay {
   /**
    * @brief output string representation of this step to a streams
    *
-   * implements the pure virtual display() method from the IDisplay base class
+   * implements the pure virtual display() method from the InterfaceDisplay base class
    * this will allow CircuitNOPStep to be printed or logged consistenly with other step
    *
    * @param os the output stream to write to

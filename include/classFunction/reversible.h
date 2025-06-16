@@ -21,10 +21,13 @@
 #ifndef CLASSFUNCTION_REVESIBLE_H_
 #define CLASSFUNCTION_REVESIBLE_H_
 
+#include <strings.h>
+
 #include <bitset>
 #include <cassert>
 #include <climits>
 #include <locale>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <string>
@@ -43,7 +46,7 @@ namespace clara {
  * that can dynamically grow as needed. it is used for efficient storage and manipulation
  * of binary data
  */
-class Dynamic_bitset : public IDisplay {
+class Dynamic_bitset : public InterfaceDisplay {
  public:
   // type used to store individual bits
   using value_type = unsigned int;
@@ -106,6 +109,8 @@ class Dynamic_bitset : public IDisplay {
       this->set(n - 1 - i, str[i] != zero);
     }
   }
+
+  ~Dynamic_bitset() override = default;
 
   /**
    * @brief get a reference to the internal stroage internal container
@@ -249,7 +254,7 @@ class Dynamic_bitset : public IDisplay {
    * @brief reset the value of all bits in the bitset to false
    * @return reference to the modified Dynamic_bitset
    */
-  Dynamic_bitset& reset() noexcept {
+  virtual Dynamic_bitset& reset() noexcept {
     idx bitset_storage_size = this->storage_size();
     for (idx i = 0; i < bitset_storage_size; ++i) {
       v_[i] = 0;
@@ -348,12 +353,12 @@ class Dynamic_bitset : public IDisplay {
    * @param os the output stream to write the binary repersentation to
    * @return the update output stream after writing the binary representation
    *
-   * @override IDisplay::display
+   * @override InterfaceDisplay::display
    *
    * NOTE: this private member function is used to display the binary repersentation of the
    * Dynamic_bitset to the specified output stream. it iterates through the bits in reverse
    * order and writes each bit's value (0 or 1) to the output stream. this function is intended
-   * to be used as an override for the IDisplay::display function
+   * to be used as an override for the InterfaceDisplay::display function
    */
   std::ostream& display(std::ostream& os) const override { return os << this->to_string(); }
 };
@@ -467,6 +472,217 @@ class Bit_circuit : public Dynamic_bitset, public InterfaceJson {
       ++depth_[__FILE__ "__total__"];  // increment total depth counter
     }
     return *this;
+  }
+
+  Bit_circuit& CNOT(idx ctrl, idx target) {
+    [[maybe_unused]] auto n = size();
+    assert(ctrl < n && target < n);
+    assert(ctrl != target);
+
+    v_[index_(target)] ^= (static_cast<value_type>(1) & (v_[index_(ctrl)] >> offset_(ctrl)))
+                          << offset_(target);
+    ++count_["CNOT"];
+    ++count_[__FILE__ "__total__"];
+
+    if (count_["CNOT"] == 1) {
+      depth_["CNOT"] = 1;
+    }
+
+    bCNOT_.flip(ctrl).flip(target);
+    if (!bCNOT_.get(ctrl) || !bCNOT_.get(target)) {
+      bCNOT_ = Dynamic_bitset{n_};
+
+      bCNOT_.set(ctrl).set(target);
+      ++depth_["CNOT"];
+    }
+
+    if (count_[__FILE__ "__total__"] == 1) {
+      depth_[__FILE__ "__total__"] = 1;
+    }
+
+    btotal_.flip(ctrl).flip(target);
+
+    if (!btotal_.get(ctrl) || !btotal_.get(target)) {
+      btotal_ = Dynamic_bitset{n_};
+      btotal_.set(ctrl).set(target);
+      ++depth_[__FILE__ "__total__"];
+    }
+    return *this;
+  }
+
+  Bit_circuit& TOF(idx i, idx j, idx k) {
+    [[maybe_unused]] auto n = size();
+    assert(i < n && j < n && k < n);
+
+    v_[index_(k)] ^= ((static_cast<value_type>(1) && (v_[index_(j)] >> offset_(j))) &
+                      (static_cast<value_type>(1) & (v_[index_(i)] >> offset_(i))))
+                     << offset_(k);
+    ++count_["TOF"];
+    ++count_[__FILE__ "__total__"];
+
+    if (count_["TOF"] == 1) {
+      depth_["TOF"] = 1;
+    }
+
+    bTOF_.flip(i).flip(j).flip(k);
+
+    if (!bTOF_.get(i) || !bTOF_.get(j) || !bTOF_.get(k)) {
+      bTOF_ = Dynamic_bitset{n_};
+
+      bTOF_.set(i).set(j).set(k);
+      ++depth_["TOF"];
+    }
+
+    if (count_[__FILE__ "__total__"] == 1) {
+      depth_[__FILE__ "__total__"] = 1;
+    }
+
+    btotal_.flip(i).flip(j).flip(k);
+
+    if (!btotal_.get(i) || !btotal_.get(j) || !btotal_.get(k)) {
+      btotal_ = Dynamic_bitset{n_};
+      btotal_.set(i).set(j).set(k);
+      ++depth_[__FILE__ "__total__"];
+    }
+    return *this;
+  }
+
+  Bit_circuit& SWAP(idx i, idx j) {
+    [[maybe_unused]] auto n = size();
+    assert(i < n && j < n);
+    assert(i != j);
+
+    if (get(i) != get(j)) {
+      X(i);
+      X(j);
+    }
+    ++count_["SWAP"];
+    ++count_[__FILE__ "__total__"];
+
+    if (count_["SWAP"] == 1) {
+      depth_["SWAP"] = 1;
+    }
+
+    btotal_.flip(i).flip(j);
+    if (!btotal_.get(i) || !btotal_.get(j)) {
+      btotal_ = Dynamic_bitset{n_};
+      btotal_.set(i).set(j);
+      ++depth_[__FILE__ "__total__"];
+    }
+    return *this;
+  }
+
+  Bit_circuit& FRED(idx i, idx j, idx k) {
+    [[maybe_unused]] auto n = size();
+    assert(i < n && j < n && k < n);
+    assert(i != j && i != k && j != k);
+
+    if (get(i)) {
+      SWAP(j, k);
+    }
+    ++count_["FRED"];
+    ++count_[__FILE__ "__total__"];
+
+    if (count_["FRED"] == 1) {
+      depth_["FRED"] = 1;
+    }
+
+    bFRED_.flip(i).flip(j).flip(k);
+    if (!bFRED_.get(i) || !bFRED_.get(j) || !bFRED_.get(k)) {
+      bFRED_ = Dynamic_bitset{n_};
+      bFRED_.set(i).set(j).set(k);
+      ++depth_["FRED"];
+    }
+
+    if (count_[__FILE__ "__total__"] == 1) {
+      depth_[__FILE__ "__total__"] = 1;
+    }
+
+    btotal_.flip(i).flip(j).flip(k);
+    if (!btotal_.get(i) || !btotal_.get(j) || !btotal_.get(k)) {
+      btotal_ = Dynamic_bitset{n_};
+      btotal_.set(i).set(j).set(k);
+      ++depth_[__FILE__ "__total__"];
+    }
+    return *this;
+  }
+
+  Bit_circuit& reset() noexcept override { return *this; }
+
+  idx get_gate_count(std::optional<std::string> name = std::nullopt) const {
+    idx result;
+
+    if (name.has_value()) {
+      try {
+        result = (name == "X") ? count_.at("NOT") : count_.at(name.value());
+      } catch (...) {
+        return 0;
+      }
+    } else {
+      try {
+        result = count_.at(__FILE__ "__total__");
+      } catch (...) {
+        return 0;
+      }
+    }
+    return result;
+  }
+
+  idx get_gate_depth(std::optional<std::string> name = std::nullopt) const {
+    idx result;
+
+    if (name.has_value()) {
+      try {
+        result = (name == "X") ? depth_.at("NOT") : depth_.at(name.value());
+      } catch (...) {
+        return 0;
+      }
+    } else {
+      try {
+        result = depth_.at(__FILE__ "__total__");
+      } catch (...) {
+        return 0;
+      }
+    }
+    return result;
+  }
+
+  std::string to_JSON(bool enclosed_in_curly_brackets = true) const override {
+    std::string result;
+
+    if (enclosed_in_curly_brackets) {
+      result += "{";
+    }
+    result += "\"n\" : " + std::to_string(n_);
+    result += ", \"total gate count\" : " + std::to_string(get_gate_count());
+    result += ", \"total gate depth\" : " + std::to_string(get_gate_depth());
+    result += R"(, "bit state" : ")" + this->to_string() + '\"';
+    result += ", \"Hamming weight\" : " + std::to_string(count());
+    if (enclosed_in_curly_brackets) {
+      result += "}";
+    }
+    return result;
+  }
+
+  std::string to_string(char zero = '0', char one = '1') const override {
+    std::string result;
+    idx bitset_size = size();
+    result.resize(bitset_size);
+
+    for (idx i = 0; i < bitset_size; ++i) {
+      result[i] = get(i) ? one : zero;
+    }
+    return result;
+  }
+
+ private:
+  std::ostream& display(std::ostream os) const {
+    os << "n = " << n_ << '\n';
+    os << "total gate count: " << get_gate_count() << '\n';
+    os << "total gate depth: " << get_gate_depth() << '\n';
+    os << "bit state: " << this->to_string() << '\n';
+    os << "Hamming weight: " << count();
+    return os;
   }
 };
 }  // namespace clara

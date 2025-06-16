@@ -245,7 +245,7 @@ class ClaraCircuit {
   std::vector<idx>& bits() noexcept { return bits_; }
 };
 
-class LogicalCircuit : public IDisplay {
+class LogicalCircuit : public InterfaceDisplay {
   using idx_vec = std::vector<idx>;
   using elem_type = std::tuple<cmat, std::string, idx_vec, idx_vec>;
   std::vector<elem_type> gates_;

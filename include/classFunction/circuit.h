@@ -30,7 +30,7 @@
 
 namespace clara {
 
-class ClaraCircuitDescription : public IDisplay {
+class ClaraCircuitDescription : public InterfaceDisplay {
   const idx nq_;
   const idx nc_;
   const idx d_;
@@ -72,7 +72,7 @@ class ClaraCircuitDescription : public IDisplay {
 
     const ClaraCircuitDescription* qcd_{nullptr};
 
-    struct value_type_ : public IDisplay {};
+    struct value_type_ : public InterfaceDisplay {};
   };
 };
 

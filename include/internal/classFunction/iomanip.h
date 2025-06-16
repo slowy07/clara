@@ -116,7 +116,7 @@ struct _Display_Impl {
  *                      of InpuIterator concept
  */
 template <typename InpuIterator>
-class IOManipRange : public IDisplay {
+class IOManipRange : public InterfaceDisplay {
   // itertor pointing to the first and past-the end element in the range
   InpuIterator first_, last_;
   std::string separator_, start_, end_;
@@ -138,7 +138,7 @@ class IOManipRange : public IDisplay {
 
  private:
   /**
-   * @brief override of the display function from IDisplay. display the range elements separated
+   * @brief override of the display function from InterfaceDisplay. display the range elements separated
    *         by the specified separator, enclosed by start and end strings
    * @param os the output stream to write the formatted range
    * @return Reference to the output to write the formatted range
@@ -163,7 +163,7 @@ class IOManipRange : public IDisplay {
  * @tparam PointerType the type of the elements in the arrays
  */
 template <typename PointerType>
-class IOManipPointer : public IDisplay {
+class IOManipPointer : public InterfaceDisplay {
   // pointer to the array
   const PointerType* p_;
   // number of the lements in the array
@@ -188,7 +188,7 @@ class IOManipPointer : public IDisplay {
 
  private:
   /**
-   * @brief override of the display function from IDisplay. display the array elements separator
+   * @brief override of the display function from InterfaceDisplay. display the array elements separator
    *        by the specified separator, enclosed by start and end string.
    * @param os the output stream to write the formatted array
    * @return reference to the output stream after writing the formatted array
@@ -212,7 +212,7 @@ class IOManipPointer : public IDisplay {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ingored "-Weffc++"
 #endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
-class IOManipEigen : public IDisplay, private _details::_Display_Impl {
+class IOManipEigen : public InterfaceDisplay, private _details::_Display_Impl {
 #if ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
 #pragma GCC diagnostic pop
 #endif  // ((__GNUC__ == 4) && (__GNUC_MINOR__ == 8) && !__clang__)
@@ -243,7 +243,7 @@ class IOManipEigen : public IDisplay, private _details::_Display_Impl {
 
  private:
   /**
-   * @brief override of the display function from IDisplay. display the Eigen matrix or complex
+   * @brief override of the display function from InterfaceDisplay. display the Eigen matrix or complex
    * number using custom formatting
    * @param os the output stream to write the formatted Eigen matrix or complex number
    * @return reference to the output stream after writting the formatted data
