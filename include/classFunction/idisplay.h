@@ -39,7 +39,7 @@ namespace clara {
  * derived classes must override the `display()` function to perform the actual stream extraction
  * processing
  */
-class IDisplay {
+class InterfaceDisplay {
  private:
   /**
    * @brief pure virtual function for displaying objects
@@ -54,17 +54,7 @@ class IDisplay {
   virtual std::ostream& display(std::ostream& os) const = 0;
 
  public:
-  // default constructor
-  IDisplay() = default;
-  // copy constructor
-  IDisplay(const IDisplay&) = default;
-  // move constructor
-  IDisplay(IDisplay&&) = default;
-  // copy assignment operator
-  IDisplay& operator=(const IDisplay&) = default;
-  IDisplay& operator=(IDisplay&&) = default;
-  // virtual destructor
-  virtual ~IDisplay() = default;
+  virtual ~InterfaceDisplay() = default;
 
   /**
    * @brief overloads the extraction operator to display objects
@@ -73,7 +63,7 @@ class IDisplay {
    * @param rhs the object to be displayed
    * @return the output stream after displaying the object
    */
-  friend inline std::ostream& operator<<(std::ostream& os, const IDisplay& rhs) {
+  friend inline std::ostream& operator<<(std::ostream& os, const InterfaceDisplay& rhs) {
     return rhs.display(os);
   }
 };
