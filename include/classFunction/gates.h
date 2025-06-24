@@ -249,9 +249,7 @@ class Gates final : public internal::Singleton<const Gates> {
    * @throws OutOfRange exception if a, N or n is out of valid range
    */
   [[clara::parallel]] cmat MODMUL(idx a, idx N, idx n) const {
-#ifndef DEBUG
     assert(gcd(a, N) == 1);
-#endif  // !DEBUG
     if (N < 3 || a >= N) {
       throw exception::OutOfRange("clara::Gates::MODMUL()");
     }
@@ -263,7 +261,7 @@ class Gates final : public internal::Singleton<const Gates> {
     idx D = static_cast<idx>(std::llround(std::pow(2, n)));
     cmat result = cmat::Zero(D, D);
 
-#ifdef WITH_OPENMP_
+#ifdef CLARA_OPENMP_
 #pragma omp parallel for collapse(2)
 #endif  // WITH_OPENMP_
     // poplulate the MODMUL gate matrix using a loop
@@ -276,7 +274,7 @@ class Gates final : public internal::Singleton<const Gates> {
       }
     }
 
-#ifdef WITH_OPENMP_
+#ifdef CLARA_OPENMP_
 #pragma omp parallel for
 #endif  // WITH_OPENMP_
     // set diagonal elements of the gate matrix for remaining indices
@@ -320,7 +318,7 @@ class Gates final : public internal::Singleton<const Gates> {
    * NOTE: the template parameter 'Derived' can be explicitly specified to change the
    * return type for the default complex matrix
    */
-  template <typename Derived = Eigen::MatrixXcd>
+  template <typename Derived = cmat>
   Derived Id(idx D = 2) const {
     if (D == 0) {
       throw exception::DimsInvalid("clara::Gates::Id()");

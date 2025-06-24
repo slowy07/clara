@@ -35,7 +35,7 @@
 #include <vector>
 
 #include "../types.h"
-#include "idisplay.h"
+#include "interface_display.h"
 #include "interface_json.h"
 
 namespace clara {

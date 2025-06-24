@@ -6,7 +6,7 @@
 
 using namespace clara;
 
-class MockDisplay : public IDisplay {
+class MockDisplay : public InterfaceDisplay {
  public:
   virtual std::ostream& display(std::ostream& os) const override {
     os << "MockTestDisplay";
@@ -19,20 +19,4 @@ TEST(clara_display_test, DisplayMockObject) {
   std::ostringstream oss;
   oss << mock;
   EXPECT_EQ(oss.str(), "MockTestDisplay");
-}
-
-class OtherTestMockDisplay : public IDisplay {
- public:
-  virtual std::ostream& display(std::ostream& os) const override {
-    os << "OtherTestMockDisplay";
-    return os;
-  }
-};
-
-TEST(clara_display_test, OtherDisplayMockObject) {
-  OtherTestMockDisplay anotherMock;
-  std::ostringstream oss;
-  oss << anotherMock;
-
-  EXPECT_EQ(oss.str(), "OtherTestMockDisplay");
 }

@@ -34,15 +34,15 @@ class Codes final : public internal::Singleton<const Codes> {
 
  public:
   // enum to define different type of quantum error correction code
-  enum class Type { FIVE_QUBIT = 1, SEVEN_QUBIT_STEANE, NINE_QUBIT_SHOR };
+  enum class Type { FIVE_QUBIT, SEVEN_QUBIT_STEANE, NINE_QUBIT_SHOR };
 
  private:
   /**
    * default initialization of an object of const type ``const clara::Codes``,
    * requires a user-provided default constructor
    */
-  Codes() {}
-  ~Codes() = default;
+  Codes() = default;
+  ~Codes() override = default;
 
  public:
   /**

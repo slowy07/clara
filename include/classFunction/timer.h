@@ -24,7 +24,7 @@
 #include <chrono>
 #include <ostream>
 
-#include "idisplay.h"
+#include "interface_display.h"
 namespace clara {
 
 /**

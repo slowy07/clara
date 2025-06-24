@@ -1,7 +1,7 @@
 #ifndef INTERNAL_CLASSFUNCTION_NOP_CIRCUIT_STEP_H_
 #define INTERNAL_CLASSFUNCTION_NOP_CIRCUIT_STEP_H_
 
-#include "../../classFunction/idisplay.h"
+#include "../../classFunction/interface_display.h"
 
 namespace clara {
 namespace internal {

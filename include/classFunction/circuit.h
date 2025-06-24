@@ -26,7 +26,7 @@
 
 #include "codes.h"
 #include "gates.h"
-#include "idisplay.h"
+#include "interface_display.h"
 
 namespace clara {
 

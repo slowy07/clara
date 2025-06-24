@@ -62,7 +62,7 @@
 #include "classFunction/codes.h"
 #include "classFunction/exception.h"
 #include "classFunction/gates.h"
-#include "classFunction/idisplay.h"
+#include "classFunction/interface_display.h"
 #include "classFunction/init.h"
 #include "classFunction/random_devices.h"
 #include "classFunction/states.h"
