@@ -96,12 +96,26 @@ inline constexpr bool is_matrix_expression_v = is_matrix_expression<T>::value;
 #pragma GCC diagnostic ignored "-Weffc++"
 #endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
         // && (__GNUC_MINOR__ == 8)
+template <typename T>
 struct is_complex : std::false_type {};
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && \
     (__GNUC_MINOR__ == 8)
 #pragma GCC diagnostic pop
 #endif  // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4)
         // && (__GNUC_MINOR__ == 8)
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
+template<typename T>
+struct is_complex<std::complex<T>> : std::true_type {};
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
+#pragma GCC diagnostic pop
+#endif // defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
+
+template <typename T>
+inline constexpr bool is_complex_v = is_complex<T>::value;
 
 namespace internal {
 // helper alias which to get evaluating type of an Eigen expression
