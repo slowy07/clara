@@ -21,230 +21,383 @@
 #ifndef INPUT_OUTPUT_H_
 #define INPUT_OUTPUT_H_
 
+#include <complex>
+#include <cstddef>
 #include <fstream>
+#include <istream>
+#include <iterator>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
 
 #include "classFunction/exception.h"
 #include "constants.h"
 #include "internal/classFunction/iomanip.h"
 #include "internal/util.h"
+#include "options.h"
 #include "traits.h"
 #include "types.h"
 
 namespace clara {
 
 /**
- * @brief create IOManipEigen object for eigen matrices
- * @tparam derived the matrix expresion type
- * @param A the eigen matrix or matrix expression to displayed
- * @param chop the precssion for displaying floating-point numbers default is clara::chop
- * @return internal::IOManipEigen an IOManip object specifically tailored for eigen matrix
+ * @brief factory function creating display manipulator for scalar value
  *
- * @example
- * Eigen::MatrixXd mat(3, 3);
- * // initialize matrix `mat` with some values
+ * this function enable custom format of scalar value
  *
- * // display the matrix with default precision
- * disp(mat) << std::endl;
+ * @tparam Scalar type of the scalar value
+ * @param scalar the scalar value to be display
+ * @param opts optional formatting options
+ * @return IOManipScalar<Scalar> object ready for streaming
  *
- * // display the matrix with custom precision
- *disp(mat, 0.001) << std::endl;
+ * example:
+ * ```
+ * double x = 1e-12;
+ * std::cout << disp(x);
+ * std::cout << disp(x, opts);
  */
-template <typename Derived>
-internal::IOManipEigen disp(const Eigen::MatrixBase<Derived>& A, double chop = clara::chop) {
-  return internal::IOManipEigen(A, chop);
+template <typename Scalar, typename std::enable_if_t<std::is_arithmetic_v<Scalar>>* = nullptr>
+inline internal::IOManipScalar<Scalar> disp(Scalar scalar, IOManipScalarOpts opts = {}) {
+  return internal::IOManipScalar<Scalar>{scalar, opts};
 }
 
 /**
- * @brief create IOManipEigen object for complex numbers
- * @param z the complex number to be displayed
- * @param chop the precision for displyaing floating-point numbers. defeault is clara::chop
- * @return internal::IOManipEigen an IOManip object specifically tailored for complex matrices
+ * @brief factory function for creating display manipulator for complex number
  *
- * @example
- * // make complex number
- * std::complex<double> complexNum(3.14, 2.17);
+ * support feature like
+ * - supressing near-zero real or imag part using a threshold
+ * - customizing delimiter
+ * design for use in generic ouput system where fine control over complex number
+ * formatting is needed
  *
- * // display the complex number with default precision
- * disp(complexNum) << std::endl;
+ * @tparam T underlying floating-point type of the complex number
+ * @param z complex number to be displayed
+ * @param opts optional formatting option
+ * @return IOManipScalar<std::complex<T>> object ready for streaming
  *
- * // display the complex number with custom precision
- * disp(complexNum, 0.0001) << std::endl;
- * '
+ * example:
+ * ```
+ * std::complex<double> z{0.0, -1.0};
+ * std::cout << disp(z);
+ * std::cout << disp(z, opts);
  */
-inline internal::IOManipEigen disp(cplx z, double chop = clara::chop) {
-  return internal::IOManipEigen(z, chop);
+template <typename T>
+inline internal::IOManipScalar<std::complex<T>> disp(std::complex<T> z,
+                                                     IOManipComplexOpts opts = {}) {
+  return internal::IOManipScalar<std::complex<T>>{z, opts};
 }
 
 /**
- * @brief function to create IOManipRange object for range of elements
- * @tparam INputIterator the input iterator type for the range
- * @param first an iterator pointing to the first element of the range
- * @param last an iterator pointing to the last element of the rangee
- * #param separator the string to be displayed to be used as separator between elements during
- * display
- * @param start the string to be display before the range of elements. default "["
- * @param end the string to be display after the range of elements default "]"
+ * @brief factory function for creating display manipulator for range elements
  *
- * @eaxmple
- * std::vector<int> vec (1, 2, 3, 4);
+ * wrapping sequence defined by two iterator
  *
- * // display the vector elements with default formatting
- * disp(vec.begin, vec.end(), ", ") << std::endl;
+ * design for use with any input iterator pair, making it suitable for
+ * - standard container
+ * - raw array
+ * - custom memory buffer
  *
- * // display the vector element with custom formatting
- * disp(vec.begin(), vec.end(), ";", "<", ">") << std::endl;
+ * @tparam InputIterator type of the input iterator
+ * @param first iterator pointing to the beginning of the range
+ * @param last iterator pointing to the end of the range
+ * @param opts optional formatting options
+ * @return IOManipRange<InputIterator> object ready for streaming
+ *
+ * example:
+ * ```
+ * std::vector<double> vektor = {1.0, 0.000001, 3.0};
+ * std::cout << disp(vektor.begin(), vektor.end());
+ * std::cout << disp(vektor.begin(), vektor.end(), opts);
+ * ```
  */
 template <typename InputIterator>
 internal::IOManipRange<InputIterator> disp(InputIterator first, InputIterator last,
-                                           const std::string& separator,
-                                           const std::string& start = "[",
-                                           const std::string& end = "]") {
-  return internal::IOManipRange<InputIterator>(first, last, separator, start, end);
+                                           IOManipRangeOpts opts = {}) {
+  return internal::IOManipRange<InputIterator>{first, last, opts};
 }
 
 /**
- * @brief create IOManipRange for a range of elements defined by two iterator
- * @tparam InputIterator the input iterator type for the the range
- * @param first an iterator pointing to the first element of the range
- * @param last an iterator pointing to the last element of the range
- * @param separator the string to be used as separator between elements during display
- * @param start the string to be displayed before the range of elements. default value is "["
- * @param end the string to be displyaed after the range of elements, default value is "]"
- * @return internal::IOManipRange<InputIterator> an IOManip object speciefied tailored of elements
+ * @brief factory function for creating a display manipulator for a range of elmeents
  *
- * @example
- * std::vector<int> vec = {1 ,2 ,3 ,4 ,5};
+ * wraps squence defined by two interator into `IOManipRange` object
+ * which allow customizable formatting when printing to an output stream
  *
- * // diplaye the vector elements with default formatting
- * disp(vec.begin, vec.end(), ", ") << std::endl;
+ * support feature
+ * - custom delimiter around the entire range
+ * - raw array
+ * - custom memory buffer
  *
- * // display the vector elements with custom foramtting
- * disp(vec.begin(), vec.edn(), "; ", "<", ">") std::endl;
- * // displaythe set elements with custom formatting
- * disp(s, "; ", "{", "}") << std::endl
+ * @tparam InputIterator type of the input iterator
+ * @param first iterator pointing to the begining of the range
+ * @param last iterator pointing to the end of the range
+ * @param opts optional formatting options
+ * @return an IOManipRange<InputIterator> object ready for streaming
+ *
+ * example
+ * ```
+ * std::vector<double> vektor = {1.0, 0.000001, 3.0};
+ * std::cout << disp(vektor.begin(), vektor.end());
+ * std::cout << disp(vektor.begin(), vektor.end(), opts);
+ * ```
  */
-
 template <typename Container>
 internal::IOManipRange<typename Container::const_iterator> disp(
-    const Container& c, const std::string& separator, const std::string& start = "[",
-    const std::string& end = "]",
-    typename std::enable_if<is_iterable<Container>::value>::type* = nullptr) {
-  return internal::IOManipRange<typename Container::const_iterator>(std::begin(c), std::end(c),
-                                                                    separator, start, end);
+    const Container& c, IOManipContainerOpts opts = {},
+    typename std::enable_if_t<is_iterable_v<Container>>* = nullptr,
+    typename std::enable_if_t<!is_matrix_expression_v<Container>>* = nullptr) {
+  return internal::IOManipRange<typename Container::const_iterator>{std::begin(c), std::end(c),
+                                                                    opts};
 }
 
 /**
- * @brief create an IOManipRange object for a range of elements defined by two iteratios
+ * @brief factory afunction for creating display manipulator for pointer-barsed sequence
  *
- * @tparam InputIterator the input iterator type for the range
- * @param first an iterator pointing to the first element of the range
- * @param last an iterator pointing to the last element of the range (on past at end)
- * @param separator the tring to be used as an separator between element during display
- * @param start the string to be displayed before the range of elements, default is "["
- * @param end string to be displayed after the range of elements, default is "]"
- * @return internal::IOManipRange<InputIterator> an IOManip object specifically tailored
- *                               of ranges of elements
+ * wrap raw pointer its length into an `IOManipPointer` object, which allows
+ * customizable formatting when printing the data to an output stream
  *
- * @example
- * std::vector<vec> vec = {1, 2, 3, 4, 5};
+ * support feature like:
+ * - custom delimiters around the entire squence
+ * - custom separator between element
+ * - suppression of near-zero value using threshold
  *
- * // display the vector elemens with default formatting
- * disp(vec.begin(), vec.end(), ", ") << std::endl;
+ * @tparam PointerType underlying value type
+ * @param P pointer to the start of the data to display
+ * @param N number of element to display
+ * @param opts optional formatting options
+ * @return an IOManipPointer<PointerType> object ready for streaming
  */
 template <typename PointerType>
-internal::IOManipPointer<PointerType> disp(const PointerType& p, idx N,
-                                           const std::string& separator,
-                                           const std::string& start = "[",
-                                           const std::string& end = "]") {
-  return internal::IOManipPointer<PointerType>(p, N, separator, start, end);
+internal::IOManipPointer<PointerType> disp(const PointerType* p, idx N,
+                                           IOManipPointerOpts opts = {}) {
+  return internal::IOManipPointer<PointerType>{p, N, opts};
+}
+
+template <typename Derived>
+internal::IOManipEigen disp(const Eigen::MatrixBase<Derived>& A, IOManipEigenOpts opts = {}) {
+  return internal::IOManipEigen(A, opts);
+}
+
+template <typename Scalar>
+internal::IOManipDirac<Scalar> disp(const clara::dirac_t<Scalar>& A, IOManipDiracOpts opts = {}) {
+  return internal::IOManipDirac<Scalar>{A, opts};
 }
 
 /**
- * @brief save an Eigen matrix or matrix expression to a binary file
- * @tparam derived matrix or matrix expression to be saved
- * @param fname the file name (including the path) where the matrix will be saved
+ * @brief serializes an Eigen matrix to a text-based output stream
  *
- * @example
- * Eigen::MatrixXd mat(3, 3);
+ * this function write the eigen matrix to the specified output stream custom format:
+ * - first line contains the matrix dimension
+ * - subsequent lines contain each row, with element separated by space
+ * - complex number are written as (real, imag)
  *
- * // save the matrix to a binary file "example matrix.bin"
- * save(mat, "matrix.bin")
+ * @tparam derived the derived type of the eigen matrix expression
+ * @param A eigen matrix to serialize
+ * @param os output stream
+ * @throws exception::ZeroSize if the matrix has zero size
+ * @throws std::runtime_error if the output stream is not in good state
  */
 template <typename Derived>
-void save(const Eigen::MatrixBase<Derived>& A, const std::string& fname) {
-  const dyn_mat<typename Derived::Scalar>& rA = A.derived();
+void save(const Eigen::MatrixBase<Derived>& A, std::ostream& os) {
+  const clara::dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
-  // check zero size
-  if (!internal::check_nonzero_size(rA))
-    throw exception::ZeroSize("clara::save()");
-  std::fstream fout;
-  fout.open(fname, std::ios::out | std::ios::binary);
+  if (!internal::check_nonzero_size(rA)) {
+    throw exception::ZeroSize("clara::save()", "A");
+  }
 
-  if (fout.fail())
-    throw std::runtime_error("clara::save() ERROR writing output file \"" + std::string(fname) +
-                             "\"");
+  if (!os.good()) {
+    throw std::runtime_error("clara::save(): error writting ouput stream");
+  }
 
-  // write header file
-  const std::string header_ = "TYPE::Eigen::Matrix";
-  fout.write(header_.c_str(), header_.length());
-
+  // extract matrix dimension
   idx rows = static_cast<idx>(rA.rows());
   idx cols = static_cast<idx>(rA.cols());
-  fout.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
-  fout.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+  os << rows << " " << cols << '\n';
 
-  fout.write(reinterpret_cast<const char*>(rA.data()),
-             sizeof(typename Derived::Scalar) * rows * cols);
-  fout.close();
+  bool is_cplx = clara::is_complex_v<typename Derived::Scalar>;
+
+  // loop throught each row of the matrix
+  for (idx i = 0; i < rows; ++i) {
+    std::string sep;
+    // loop through each column in the current row
+    for (idx j = 0; j < cols; ++j) {
+      if (is_cplx) {
+        // if the matrix contains complex number, wrap them in parentheses
+        os << sep << '(' << internal::real2text(std::real(rA(i, j)));
+        os << ',' << internal::real2text(std::imag(rA(i, j))) << ')';
+      } else {
+        os << sep << internal::real2text(rA(i, j));
+      }
+      sep = " ";
+    }
+    os << '\n';
+  }
 }
 
 /**
- * @brief load an eigen matrix or eigen expression from a binary file
- * @tparam derived the matrix expression type
- * @param fname file name (including the path) from where the matrix will be loaded
- * @return dyn_mat<typename Derived::Scalar> the loaded eigen matrix
+ * @brief loads a complex-value matrix from an input stream
  *
- * @example
- * Eigen::MatrixXd loadedMatrix = load <Eigen::MatrixXd>("matrix.bin");
+ * this function parses text-based representation of complex matrix
+ *
+ * design as counterpart to the `save(...)` function, this enable deterministic
+ * serialization and deserialization of complex-valued eigen matrices
+ *
+ * @tparam derived eigen matrix type with complex scalar
+ * @param is input stream to read
+ * @param dummy SFINAE constraint to enable only for complex type
+ * @return complex matrix recronstucted from the stream
+ * @throws std::runtime_error if stream is invalid or data malformed
  */
 template <typename Derived>
-dyn_mat<typename Derived::Scalar> load(const std::string& fname) {
-  std::fstream fin;
-  fin.open(fname, std::ios::in | std::ios::binary);
-
-  if (fin.fail()) {
-    throw std::runtime_error("clara::load() ERROR opening input file \"" + std::string(fname) +
-                             "\"");
-  }
-  const std::string header_ = "TYPE::Eigen::Matrix";
-  std::unique_ptr<char[]> fheader_{new char[header_.length()]};
-
-  // read the header from file
-  fin.read(fheader_.get(), header_.length());
-  // null-terminate the string
-  fheader_[header_.length()] = '\0';
-  if (std::string(fheader_.get(), header_.length()) != header_) {
-    // compare with the entire string
-    throw std::runtime_error("clara::load() corrupted file \"" + std::string(fname) + "\"!");
+dyn_mat<typename Derived::Scalar> load(
+    std::istream& is, std::enable_if_t<is_complex_v<typename Derived::Scalar>>* = nullptr) {
+  if (!is.good()) {
+    throw std::runtime_error("clara::load(): error opening input stream");
   }
 
-  typename Derived::Index rows, cols;
-  fin.read(reinterpret_cast<char*>(&rows), sizeof(rows));
-  fin.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+  // read matrix dimension
+  idx rows, cols;
+  is >> rows >> cols;
 
-  if (rows < 0 || cols < 0) {
-    throw exception::CustomException(
-        "clara::load()", "invalid matrix dimension in file \"" + std::string(fname) + "\"");
+  // create matrix of appropriate size
+  clara::dyn_mat<typename Derived::Scalar> A(rows, cols);
+  // temporary variables for parsing complex number
+  char skip;
+  decltype(std::declval<typename Derived::Scalar>().real()) re, im;
+
+  // read each element row by row
+  for (idx i = 0; i < rows; ++i) {
+    for (idx j = 0; j < cols; ++j) {
+      is >> skip >> re >> skip >> im >> skip;
+      A(i, j) = typename Derived::Scalar{re, im};
+    }
   }
-
-  dyn_mat<typename Derived::Scalar> A(rows, cols);
-
-  fin.read(reinterpret_cast<char*>(A.data()), sizeof(typename Derived::Scalar) * rows * cols);
-  fin.close();
   return A;
 }
+
+/**
+ * @brief load real-valued matrix from an input stream
+ *
+ * design as counterpart to the `save(...)` function, this enables deterministic
+ * serialization and deserialization of real-valued eigen matrices
+ *
+ * @tparam Derived the derived Eigen matrix with real scalar
+ * @param is input stream to read from
+ * @param dummy SFINAE constraint to eanble only fro real type
+ * @return real-valued matrix recronstucted from the stream
+ * @throws std::runtime_error if stream is invalid or data malformed
+ */
+template <typename Derived>
+dyn_mat<typename Derived::Scalar> load(
+    std::istream& is, std::enable_if_t<!clara::is_complex_v<typename Derived::Scalar>>* = nullptr) {
+  if (!is.good()) {
+    throw std::runtime_error("clara:load(): error opening input stream");
+  }
+
+  // read matrix dimension
+  idx rows, cols;
+  is >> rows >> cols;
+
+  // create matrix of appropriate size
+  clara::dyn_mat<typename Derived::Scalar> A(rows, cols);
+  // read each element row by row
+  for (clara::idx i = 0; i < rows; ++i) {
+    for (idx j = 0; j < cols; ++j) {
+      is >> A(i, j);
+    }
+  }
+  return A;
+}
+
+namespace stalestuff {
+
+/**
+ * @brief serialization an eigen matrix to binary output stream
+ *
+ * this useful for
+ * - fast serialization / deserialization
+ * - efficient storage of large matrices
+ * - interfacing with system requiring binary input / output
+ *
+ * @tparam Derived the derived type of the eigen matrix expression
+ * @param A eigen matrix to serialize
+ * @param os output stream to write to
+ * @throws expcetion::ZeroSize if the matrix has zero size
+ * @throws std::runtime_error if the output stream is not a good state
+ */
+template <typename Derived>
+void save(const Eigen::MatrixBase<Derived>& A, std::ostream& os) {
+  // get the concrete derived matrix type
+  const dyn_mat<typename Derived::Scalar>& rA = A.derived();
+
+  if (!internal::check_nonzero_size(rA)) {
+    throw exception::ZeroSize("clara::stalestuff::save()", "A");
+  }
+
+  if (!os.good()) {
+    throw std::runtime_error("clara::stalestuff::save(): error writing output stream");
+  }
+
+  // write human-readable header to identify the file content
+  const std::string header_ = "TYPE::Eigen:Matrix";
+  os.write(header_.c_str(), static_cast<std::ptrdiff_t>(header_.length()));
+
+  // extract matrix dimension
+  idx rows = static_cast<idx>(rA.rows());
+  idx cols = static_cast<idx>(rA.cols());
+
+  // write the number of row and column in binary format
+  os.write(reinterpret_cast<const char*>(&rows), sizeof(rows));
+  os.write(reinterpret_cast<const char*>(&cols), sizeof(cols));
+  // write raw binary data of the matrix
+  // this assume the matrix is stored in column-major order
+  os.write(reinterpret_cast<const char*>(rA.data()),
+           sizeof(typename Derived::Scalar) * rows * cols);
+}
+
+/**
+ * @brief loads an eigen matrix from binary input stream
+ *
+ *
+ * - fixed ASCII header string: `"TYPE::Eigen::Matrix`
+ * - binary-encoded number of rows and columns
+ * - raw binary data of all matrix elements
+ *
+ * @tparam Derived the derived type of the Eigen matrix expression
+ * @param is input stream to read from
+ * @return A matrix recronstucted from the binary stream
+ * @throws std::runtime_error if stream is invalid or file is corrupt
+ */
+template <typename Derived>
+dyn_mat<typename Derived::Scalar> load(std::istream& is) {
+  if (!is.good()) {
+    throw std::runtime_error("clara::stalestuff::load(): error opening input stream");
+  }
+
+  // defined expected header string used during save
+  const std::string header_ = "TYPE::Eigen::Matrix";
+  // allocate a buffer to read the header from the stream
+  std::unique_ptr<char[]> fheader_{new char[header_.length()]};
+  if (std::string(fheader_.get(), header_.length()) != header_) {
+    throw std::runtime_error("clara::stalestuff::load(): input stream is corrupt");
+  }
+
+  // read matrix dimension
+  idx rows, cols;
+  // read row count from binary stream
+  is.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+  // read column count from binary stream
+  is.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+
+  // create dynamic sized matrix of appropriate scalar type
+  dyn_mat<typename Derived::Scalar> A(rows, cols);
+  is.read(reinterpret_cast<char*>(A.data()), sizeof(typename Derived::Scalar) * rows * cols);
+
+  return A;
+}
+
+}  // namespace stalestuff
 
 }  // namespace clara
 
