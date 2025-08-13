@@ -23,12 +23,15 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <exception>
 #include <functional>
 #include <ios>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -305,13 +308,42 @@ typename Derived::Scalar prod(const Eigen::MatrixBase<Derived>& A) {
  * double normValue = nrom(inputMatrix);
  */
 template <typename Derived>
-double norm(const Eigen::MatrixBase<Derived>& A) {
+realT norm(const Eigen::MatrixBase<Derived>& A) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
 
   if (!internal::check_nonzero_size(rA))
     throw exception::ZeroSize("clara::norm()");
   // convert matrix to complex then return its norm
   return (rA.template cast<cplx>()).norm();
+}
+
+template <typename Derived>
+dyn_mat<typename Derived::Scalar> normalize(const Eigen::MatrixBase<Derived>& A) {
+  const expr_t<Derived>& rA = A.derived();
+
+  if (!internal::check_nonzero_size(rA)) {
+    throw exception::ZeroSize("clara::normalize()", "A");
+  }
+
+  expr_t<Derived> result;
+
+  if (internal::check_vector(rA)) {
+    realT normA = norm(rA);
+
+    if (normA == 0) {
+      throw std::overflow_error("clara::normalize(): division by zero");
+    }
+    result = rA / normA;
+  } else if (internal::check_square_mat(rA)) {
+    typename Derived::Scalar traceA = trace(rA);
+    if (std::abs(traceA) == 0) {
+      throw std::overflow_error("clara::normalize(): division by zero");
+    }
+    result = rA / trace(rA);
+  } else {
+    throw exception::MatrixNotSquareNorRvector("clara::normalize()", "A");
+  }
+  return result;
 }
 
 /**
@@ -1040,11 +1072,11 @@ double schatten(const Eigen::MatrixBase<Derived>& A, double p) {
 
 /**
  * @brief Apply a scalar function element-wise to an Eigen matrix
- * 
+ *
  * this function applies a scalar function element-wise to ech entry of the input matrix 'A'.
  * the result is new matrix of the same dimensions, where each entry is the result of
  * applying the provided scalar function to the corresponding entry in 'A'
- * 
+ *
  * @tparam OutputScalar the scalar type of the output matrix
  * @tparam Derived the derived type of the input matrix 'A'
  * @param A the input matrix to which the scalar function is applied
@@ -1056,10 +1088,10 @@ double schatten(const Eigen::MatrixBase<Derived>& A, double p) {
  * @example
  * Eigen::MatrixXd inputMatrix(2, 2);
  * inputMatrix << 1, 2, 3, 4;
- * 
+ *
  * // define scalar function that square its input
  * auto squareFunction = [](const double& x) { return x * x; };
- * 
+ *
  * // apply the scalar function element-wise to the input matrix
  * Eigen::MatrixXd result = cwise(inputMatrix, squareFunction);
  * std::cout << "input matrix " << std::endl << clara::disp(inputMatrix) << std::endl;
@@ -2368,7 +2400,7 @@ cmat operator"" _prj() {
   }
 
   // using the kronecker product to construct the qubit projector
-  return kron(operator""_ket<Bits...>(), operator""_bra<Bits...>());
+  return kron(operator""_ket < Bits...>(), operator""_bra < Bits...>());
 }
 }  // namespace literals
 
