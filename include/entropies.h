@@ -59,7 +59,7 @@ double entropy(const Eigen::MatrixBase<Derived>& A) {
     throw exception::MatrixNotSquare("clara::entropy()");
 
   // calculate the singular values 'A'
-  dmat ev = svals(rA);
+  rmat ev = svals(rA);
   double result = 0;
   for (idx i = 0; i < static_cast<idx>(ev.rows()); ++i) {
     // calculate the von neuman entropy term for each non-zero
@@ -139,7 +139,7 @@ double renyi(const Eigen::MatrixBase<Derived>& A, double alpha) {
     return -std::log2(svals(rA)[0]);
 
   // general case
-  dmat sv = svals(rA);
+  rmat sv = svals(rA);
   double result = 0;
   for (idx i = 0; i < static_cast<idx>(sv.rows()); ++i)
     if (sv(i) != 0)
@@ -245,7 +245,7 @@ double tsallis(const Eigen::MatrixBase<Derived>& A, double q) {
   if (q == 1)
     return entropy(rA) * std::log(2.);
 
-  dmat ev = svals(rA);
+  rmat ev = svals(rA);
   double result = 0;
   for (idx i = 0; i < static_cast<idx>(ev.rows()); ++i)
     if (ev(i) != 0)
@@ -308,7 +308,7 @@ inline double tsallis(const std::vector<double>& prob, double q) {
  *        system
  * quantum mutual information measures the mutual information two subsystem A and B of composite
  * quantum system. it is defined as the different of the sum of the entropies of the reduced
- * dmatrices of subsystem A and B and the entropy of the reduced density matrix of their AB: \f$
+ * rmatrices of subsystem A and B and the entropy of the reduced density matrix of their AB: \f$
  * I(A:B) = S(\rho_A) + S(\rho_B) - S(\rho_{AB}) \f$
  *
  * @param A the input density matrix representing the composite quantum system
@@ -322,7 +322,7 @@ inline double tsallis(const std::vector<double>& prob, double q) {
  * @exception exception::MatrixNotSquare thrown if the input density matrix 'A' is not square
  * @exception exception::DimsMismatchMatrix thrown if the input dimension vector `dims` does not
  * match dimension of 'A'
- * @exception exception::SubsysMismatchdims thrown if the input subsystem 'subsyA' and 'subsysB' do
+ * @exception exception::SubsysMismatchDims thrown if the input subsystem 'subsyA' and 'subsysB' do
  * not match dimension 'A'
  *
  * @example
@@ -357,7 +357,7 @@ double qmutualinfo(const Eigen::MatrixBase<Derived>& A, const std::vector<idx>& 
   // check that subsys are valid
   if (!internal::check_subsys_match_dims(subsysA, dims) ||
       !internal::check_subsys_match_dims(subsysB, dims))
-    throw exception::SubsysMismatchdims("clara::qmutualinfo()");
+    throw exception::SubsysMismatchDims("clara::qmutualinfo()");
   std::vector<idx> full_system(dims.size());
   std::iota(std::begin(full_system), std::end(full_system), 0);
 

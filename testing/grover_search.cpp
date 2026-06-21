@@ -42,7 +42,7 @@ int main() {
    */
   clara::idx marked = clara::randidx(0, N - 1);
   std::cout << "mark state " << marked << "->";
-  std::cout << clara::disp(clara::n2multiidx(marked, dims), " ") << std::endl;
+  std::cout << clara::disp(clara::n2multiidx(marked, dims)) << std::endl;
 
   /**
    * computational state `psi` is initialized to `|0>^n`, meaning
@@ -94,7 +94,7 @@ int main() {
   auto measured = clara::measure(psi, gt.Id(N));
   std::cout << "probability of marked state: " << std::get<1>(measured)[marked] << std::endl;
   std::cout << "probability of all results: ";
-  std::cout << clara::disp(std::get<1>(measured), ", ") << std::endl;
+  std::cout << clara::disp(std::get<1>(measured), IOManipContainerOpts{}.set_sep(", ")) << std::endl;
 
   // sample
   std::cout << "sample " << std::endl;
@@ -104,5 +104,5 @@ int main() {
   else
     std::cout << "not yet obtained";
   std::cout << result << " -> ";
-  std::cout << clara::disp(n2multiidx(result, dims), " ") << std::endl;
+  std::cout << clara::disp(n2multiidx(result, dims)) << std::endl;
 }

@@ -24,7 +24,7 @@ int main() {
   auto measured = measure(result, gt.H, {0});
   std::cout << "measurement result: " << std::get<0>(measured) << std::endl;
   std::cout << "probabilities: ";
-  std::cout << disp(std::get<1>(measured), ", ") << std::endl;
+  std::cout << disp(std::get<1>(measured), IOManipContainerOpts{}.set_sep(", ")) << std::endl;
   // print the result state for each ppossible measure outcome
   std::cout << "result state:\n";
   for (auto&& it : std::get<2>(measured))

@@ -283,7 +283,7 @@ std::tuple<idx, std::vector<double>, std::vector<cmat>> measure(const Eigen::Mat
         outstates[i] = tmp / std::sqrt(prob[i]);
     }
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::measure()");
+    throw exception::MatrixNotSquareNorCvector("clara::measure()");
 
   // sample from the probability discrete_distribution
   std::discrete_distribution<idx> dd(std::begin(prob), std::end(prob));
@@ -444,7 +444,7 @@ std::tuple<idx, std::vector<double>, std::vector<cmat>> measure(const Eigen::Mat
 
   // check subsy is valid w.r.t dims
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::measure()");
+    throw exception::SubsysMismatchDims("clara::measure()");
   std::vector<idx> subsys_dims(subsys.size());
   for (idx i = 0; i < subsys.size(); ++i)
     subsys_dims[i] = dims[subsys_dims[i]];
@@ -490,7 +490,7 @@ std::tuple<idx, std::vector<double>, std::vector<cmat>> measure(const Eigen::Mat
       }
     }
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::measure()");
+    throw exception::MatrixNotSquareNorCvector("clara::measure()");
 
   std::discrete_distribution<idx> dd(std::begin(prob), std::end(prob));
   idx result = dd(RandomDevices::get_instance().get_prng());
@@ -698,7 +698,7 @@ std::tuple<idx, std::vector<double>, std::vector<cmat>> measure(const Eigen::Mat
     throw exception::DimsInvalid("clara::measure()");
   // check if the specified subsystem 'subsys' match the dimension dims
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::measure()");
+    throw exception::SubsysMismatchDims("clara::measure()");
 
   // calculate the dimension of the specified subsystem
   std::vector<idx> subsys_dims(subsys.size());
@@ -753,7 +753,7 @@ std::tuple<idx, std::vector<double>, std::vector<cmat>> measure(const Eigen::Mat
       Ks[i] = V.col(i) * adjoint(V.col(i));
     return measure(rA, Ks, subsys, dims);
   }
-  throw exception::MatrixNotSquareNotCvector("clara::measure()");
+  throw exception::MatrixNotSquareNorCvector("clara::measure()");
 }
 
 /**
@@ -881,11 +881,11 @@ std::tuple<std::vector<idx>, double, cmat> measure_seq(const Eigen::MatrixBase<D
     if (!internal::check_dims_match_cvect(dims, cA))
       throw exception::DimsMismatchMatrix("clara::measure_seq()");
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::measure_seq");
+    throw exception::MatrixNotSquareNorCvector("clara::measure_seq");
 
   // check if the specified subsystem match the dimension
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::measure_seq()");
+    throw exception::SubsysMismatchDims("clara::measure_seq()");
   std::vector<idx> result;
   double prob = 1;
 

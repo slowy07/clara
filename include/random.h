@@ -160,7 +160,7 @@ Derived rand(idx rows, idx cols, double a = 0, double b = 1) {
 /**
  * @brief generate random real matrix with entries uniformly distributed in the interval [a, b]
  * this function generate a random real matrix with entries uniformly distributed in the interval
- * The template parameter 'dmat' must be explicitly provided since it cannot be automatically
+ * The template parameter 'rmat' must be explicitly provided since it cannot be automatically
  * deduced the function takes four parameters row, cols, a and b 'rows' and 'cols' represent the
  * number of rows and columns of the generated matrix, respectively 'a' and 'b' represent the lower
  * and upper bounds of the interval for the random entries
@@ -183,19 +183,19 @@ Derived rand(idx rows, idx cols, double a = 0, double b = 1) {
  * Eigen::MatrixXd random_matrix = rand<Eigen::MatrixXd>(rows, cols, lower_bound, upper_bound);
  */
 template <>
-inline dmat rand(idx rows, idx cols, double a, double b) {
+inline rmat rand(idx rows, idx cols, double a, double b) {
   if (rows == 0 || cols == 0)
     throw exception::ZeroSize("clara::rand()");
   if (a >= b)
     throw exception::OutOfRange("clara::rand()");
-  return dmat::Zero(rows, cols).unaryExpr([a, b](double) { return rand(a, b); });
+  return rmat::Zero(rows, cols).unaryExpr([a, b](double) { return rand(a, b); });
 }
 
 /**
  * @brief generate a random real matrix with entries uniformly distributed in the interval [a, b]
  *
  * this function is specialized for complex matrices (cmat) and uses the 'rand' function to generate
- * random real matrices (dmat) with entries uniformly distributed in the interval [a, b]. The
+ * random real matrices (rmat) with entries uniformly distributed in the interval [a, b]. The
  * template parameter 'cmat' must be explicitly provided since it cannot be automatically deduced.
  * the function takes four parameters: 'rows', 'cols', 'a', and 'b'.
  * 'rows' and 'cols' represent the number of rows and columns of the generated complex matrix,
@@ -228,8 +228,8 @@ inline cmat rand(idx rows, idx cols, double a, double b) {
   if (a >= b)
     throw exception::OutOfRange("clara::rand()");
 
-  return rand<dmat>(rows, cols, a, b).cast<cplx>() +
-         1_i * rand<dmat>(rows, cols, a, b).cast<cplx>();
+  return rand<rmat>(rows, cols, a, b).cast<cplx>() +
+         1_i * rand<rmat>(rows, cols, a, b).cast<cplx>();
 }
 
 /**
@@ -293,11 +293,11 @@ Derived randn(idx rows, idx cols, double mean = 0, double sigma = 1) {
  * Eigen::MatrixXd random_real_matrix = randn(rows, cols, mean, sigma);
  */
 template <>
-inline dmat randn(idx rows, idx cols, double mean, double sigma) {
+inline rmat randn(idx rows, idx cols, double mean, double sigma) {
   if (rows == 0 || cols == 0)
     throw exception::ZeroSize("clara::randn()");
   std::normal_distribution<> nd(mean, sigma);
-  return dmat::Zero(rows, cols).unaryExpr([&nd](double) {
+  return rmat::Zero(rows, cols).unaryExpr([&nd](double) {
 #ifdef NO_THREAD_LOCAL_
     return nd(RandomDevices::get_instance().get_prng());
 #else
@@ -315,8 +315,8 @@ template <>
 inline cmat randn(idx rows, idx cols, double mean, double sigma) {
   if (rows == 0 || cols == 0)
     throw exception::ZeroSize("clara::randn()");
-  return randn<dmat>(rows, cols, mean, sigma).cast<cplx>() +
-         1_i * randn<dmat>(rows, cols, mean, sigma).cast<cplx>();
+  return randn<rmat>(rows, cols, mean, sigma).cast<cplx>() +
+         1_i * randn<rmat>(rows, cols, mean, sigma).cast<cplx>();
 }
 
 /**
@@ -364,7 +364,7 @@ inline cmat randU(idx D) {
   Eigen::HouseholderQR<cmat> qr(X);
 
   cmat Q = qr.householderQ();
-  Eigen::VectorXcd phases = (rand<dmat>(D, 1)).cast<cplx>();
+  Eigen::VectorXcd phases = (rand<rmat>(D, 1)).cast<cplx>();
   for (idx i = 0; i < static_cast<idx>(phases.rows()); ++i)
     phases(i) = std::exp(2 * pi * 1_i * phases(i));
   Q = Q * phases.asDiagonal();

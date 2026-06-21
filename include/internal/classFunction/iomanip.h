@@ -283,12 +283,12 @@ class IOManipDirac : public InterfaceDisplay {
  private:
   void display_ket_dits_(std::ostream& os, const std::vector<idx>& dits) const {
     os << "|";
-    os << IOManipRange(dits.begin(), dits.end(), IOManipRangeOpts{}.set_left("").set_right(""));
+    os << IOManipRange<typename std::vector<idx>::const_iterator>(dits.begin(), dits.end(), IOManipRangeOpts{}.set_left("").set_right(""));
   }
 
   void display_bra_dits_(std::ostream& os, const std::vector<idx>& dits) const {
     os << "<";
-    os << IOManipRange(dits.begin(), dits.end(), IOManipRangeOpts{}.set_sep("").set_right(""));
+    os << IOManipRange<typename std::vector<idx>::const_iterator>(dits.begin(), dits.end(), IOManipRangeOpts{}.set_sep("").set_right(""));
     os << "|";
   }
 

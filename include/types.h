@@ -23,7 +23,7 @@
 
 #include <complex>
 #include <cstddef>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <tuple>
 #include <type_traits>
 

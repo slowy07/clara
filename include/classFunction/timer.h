@@ -57,7 +57,6 @@ class Timer : public InterfaceDisplay {
    */
   void tic() noexcept {
     start_ = end_ = CLOCK_T::now();
-    return *this;
   }
 
   /**

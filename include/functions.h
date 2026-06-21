@@ -508,7 +508,7 @@ std::pair<dyn_col_vect<double>, cmat> heig(const Eigen::MatrixBase<Derived>& A) 
 template <typename Derived>
 dyn_col_vect<double> hevals(const Eigen::MatrixBase<Derived>& A) {
   const dyn_mat<typename Derived::Scalar>& rA = A.derived();
-  if (!internal::check_square_mat(rA))
+  if (!internal::check_nonzero_size(rA))
     throw exception::ZeroSize("clara::hevals()");
   if (!internal::check_square_mat(rA))
     throw exception::MatrixNotSquare("clara::hevals()");
@@ -820,7 +820,7 @@ cmat expm(const Eigen::MatrixBase<Derived>& A) {
     throw exception::MatrixNotSquare("clara::expm()");
   // compute the matrix exponential using the functional calculus method
   // exp function
-  return fnum(rA, &std::exp);
+  return funm(rA, &std::exp);
 }
 
 /**
@@ -1106,9 +1106,9 @@ dyn_mat<OutputScalar> cwise(const Eigen::MatrixBase<Derived>& A,
     throw exception::ZeroSize("clara::cwise()");
   dyn_mat<OutputScalar> result(rA.rows(), rA.cols());
 
-#ifndef WITH_OPENMP_
+#ifdef WITH_OPENMP
 #pragma omp parallel for collapse(2)
-#endif  // !WITH_OPENMP_
+#endif  // WITH_OPENMP
   for (idx j = 0; j < static_cast<idx>(rA.cols()); ++j)
     for (idx i = 0; i < static_cast<idx>(rA.rows()); ++i)
       result(i, j) = (*f)(rA(i, j));
@@ -1813,7 +1813,7 @@ inline idx multiidx2n(const std::vector<idx>& midx, const std::vector<idx>& dims
  *
  * @throws clara::ZeroSize if the size of 'mask' or 'dims' is zero
  * @throws clara::DimsInvalid if 'dims' contains invalid values
- * @throws clara::SubsysMismatchdims if 'mask' and 'dims' have different size, or if any element in
+ * @throws clara::SubsysMismatchDims if 'mask' and 'dims' have different size, or if any element in
  * 'mask' exceeds the corresponding dimension in 'dims'
  *
  * @example
@@ -1835,11 +1835,11 @@ inline ket mket(const std::vector<idx>& mask, const std::vector<idx>& dims) {
     throw exception::DimsInvalid("clara::mket()");
   // check mask and dims have the same size
   if (mask.size() != dims.size())
-    throw exception::SubsysMismatchdims("clara::mket()");
+    throw exception::SubsysMismatchDims("clara::mket()");
   // check mask is a valid vector
   for (idx i = 0; i < N; ++i)
     if (mask[i] >= dims[i])
-      throw exception::SubsysMismatchdims("clara::mket()");
+      throw exception::SubsysMismatchDims("clara::mket()");
 
   // create a ket vector with zero entries and set the position corresponding to the multi-index
   // 'mask' to 1
@@ -1864,7 +1864,7 @@ inline ket mket(const std::vector<idx>& mask, const std::vector<idx>& dims) {
  *
  * @throws exception::ZeroSize if the size of 'mask' is zero
  * @throws exception::DimsInvalid if 'd' is zero
- * @throws exception::SubsysMismatchdims if any element in 'mask' is greater than or equal to 'd'
+ * @throws exception::SubsysMismatchDims if any element in 'mask' is greater than or equal to 'd'
  *
  * @example
  * // multi-index repersenting basis state indices for each subsystem
@@ -1888,7 +1888,7 @@ inline ket mket(const std::vector<idx>& mask, idx d = 2) {
 
   for (idx i = 0; i < N; ++i)
     if (mask[i] >= d)
-      throw exception::SubsysMismatchdims("clara::mket()");
+      throw exception::SubsysMismatchDims("clara::mket()");
 
   // create a ket vector with zero entries and set the position corresponding
   // to the multi-index 'mask' to 1
@@ -1921,11 +1921,11 @@ inline cmat mprj(const std::vector<idx>& mask, const std::vector<idx>& dims) {
     throw exception::ZeroSize("clara::mprj()");
   // check mask and dims have the same size
   if (mask.size() != dims.size())
-    throw exception::SubsysMismatchdims("clara::mprj()");
+    throw exception::SubsysMismatchDims("clara::mprj()");
   // check mask is valid vector
   for (idx i = 0; i < N; ++i)
     if (mask[i] >= dims[i])
-      throw exception::SubsysMismatchdims("clara::mprj()");
+      throw exception::SubsysMismatchDims("clara::mprj()");
   cmat result = cmat::Zero(D, D);
   idx pos = multiidx2n(mask, dims);
   result(pos, pos) = 1;
@@ -1949,7 +1949,7 @@ inline cmat mprj(const std::vector<idx>& mask, const std::vector<idx>& dims) {
  *
  * @throws clara::ZeroSize if the size of 'mask' is zero
  * @throws clara::ZeroSize if the size of 'dims' is zero
- * @throws clara::SubsysMismatchdims if the size of 'mask' and 'dims' do not matcj
+ * @throws clara::SubsysMismatchDims if the size of 'mask' and 'dims' do not matcj
  *
  * @example
  * // multi-index representing basis state indices for each subsystem
@@ -1976,7 +1976,7 @@ inline cmat mprj(const std::vector<idx>& mask, idx d = 2) {
   // check mask is a valid vector
   for (idx i = 0; i < N; ++i)
     if (mask[i] >= d)
-      throw exception::SubsysMismatchdims("clara::mprj()");
+      throw exception::SubsysMismatchDims("clara::mprj()");
 
   // create a complex-valued matrix with zero entries and set the position
   // corresponding to the multi-index 'mask'

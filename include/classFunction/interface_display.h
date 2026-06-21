@@ -144,7 +144,7 @@ struct Display_Impl_ {
       idx spacer = 2;
       for (idx j = 1; j < static_cast<idx>(A.cols()); ++j) {
         os << std::setw(static_cast<int>(max_length_cols[j] + spacer)) << std::right
-           << vstr[i * A.cls() + j];
+           << vstr[i * A.cols() + j];
       }
 
       // ad newline after each row execpt the last one

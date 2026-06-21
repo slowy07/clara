@@ -47,7 +47,9 @@ class Exception : public std::exception {
    * @param where description of where the exception occured
    * @param context optional additional context or explanation about the error
    */
-  explicit Exception(std::string where, std::optional<std::string> context = std::nullopt)
+  explicit Exception(std::string where)
+      : where_{std::move(where)}, message_{}, context_{std::nullopt} {}
+  explicit Exception(std::string where, std::string context)
       : where_{std::move(where)}, message_{}, context_{std::move(context)} {}
 
   /**

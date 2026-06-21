@@ -51,7 +51,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
 
   // check subsys
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::applyCTRL()");
+    throw exception::SubsysMismatchDims("clara::applyCTRL()");
 
   // check that gate matches the dimension of the subsys
   std::vector<idx> subsys_dims(subsys.size());
@@ -65,7 +65,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
   std::sort(std::begin(ctrlgate), std::end(ctrlgate));
 
   if (!internal::check_subsys_match_dims(ctrlgate, dims))
-    throw exception::SubsysMismatchdims("clara::applyCTRL()");
+    throw exception::SubsysMismatchDims("clara::applyCTRL()");
 
   // contruct the table of A^i
   std::vector<dyn_mat<typename Derived1::Scalar>> Ai;
@@ -313,7 +313,7 @@ dyn_mat<typename Derived1::Scalar> applyCTRL(const Eigen::MatrixBase<Derived1>& 
             }
     return result;
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::applyCTRL()");
+    throw exception::MatrixNotSquareNorCvector("clara::applyCTRL()");
 }
 
 /**
@@ -379,7 +379,7 @@ dyn_mat<typename Derived1::Scalar> apply(const Eigen::MatrixBase<Derived1>& stat
 
   // check subsys is valid w.r.t dims
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::apply()");
+    throw exception::SubsysMismatchDims("clara::apply()");
 
   // check that gate matches the dimension of the subsys
   std::vector<idx> subsys_dims(subsys.size());
@@ -397,7 +397,7 @@ dyn_mat<typename Derived1::Scalar> apply(const Eigen::MatrixBase<Derived1>& stat
       throw exception::DimsMismatchMatrix("clara::apply()");
     return applyCTRL(rstate, rA, {}, subsys, dims);
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::apply()");
+    throw exception::MatrixNotSquareNorCvector("clara::apply()");
 }
 
 /**
@@ -476,7 +476,7 @@ cmat apply(const Eigen::MatrixBase<Derived>& A, const std::vector<cmat>& Ks,
     throw exception::DimsMismatchMatrix("clara::apply()");
 
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::apply()");
+    throw exception::SubsysMismatchDims("clara::apply()");
 
   std::vector<idx> subsys_dims(subsys.size());
   for (idx i = 0; i < subsys.size(); ++i)
@@ -632,7 +632,7 @@ inline std::vector<cmat> choi2kraus(const cmat& A) {
   if (D * D != static_cast<idx>(A.rows()))
     throw exception::DimsInvalid("clara::choi2kraus()");
 
-  dmat ev = hevals(A);
+  rmat ev = hevals(A);
   cmat evec = hevects(A);
   std::vector<cmat> result;
 
@@ -755,7 +755,7 @@ dyn_mat<typename Derived::Scalar> ptrace1(const Eigen::MatrixBase<Derived>& A,
         result(i, j) = worker(i, j);
     return result;
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::ptrace1()");
+    throw exception::MatrixNotSquareNorCvector("clara::ptrace1()");
 }
 
 /**
@@ -830,7 +830,7 @@ dyn_mat<typename Derived::Scalar> ptrace2(const Eigen::MatrixBase<Derived>& A,
         result(i, j) = trace(rA.block(i * DB, j * DB, DB, DB));
     return result;
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::ptrace1()");
+    throw exception::MatrixNotSquareNorCvector("clara::ptrace1()");
 }
 
 /**
@@ -874,7 +874,7 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
 
   // check that subsys are valid
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::ptrace()");
+    throw exception::SubsysMismatchDims("clara::ptrace()");
 
   idx D = static_cast<idx>(rA.rows());
   idx N = dims.size();
@@ -1000,7 +1000,7 @@ dyn_mat<typename Derived::Scalar> ptrace(const Eigen::MatrixBase<Derived>& A,
     }
     return result;
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::ptrace()");
+    throw exception::MatrixNotSquareNorCvector("clara::ptrace()");
 }
 
 /**
@@ -1041,7 +1041,7 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
   if (!internal::check_dims(dims))
     throw exception::DimsInvalid("clara::ptranspose()");
   if (!internal::check_subsys_match_dims(subsys, dims))
-    throw exception::SubsysMismatchdims("clara::ptranspose()");
+    throw exception::SubsysMismatchDims("clara::ptranspose()");
 
   idx D = static_cast<idx>(rA.rows());
   idx N = dims.size();
@@ -1123,7 +1123,7 @@ dyn_mat<typename Derived::Scalar> ptranspose(const Eigen::MatrixBase<Derived>& A
     }
     return result;
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::ptranspose()");
+    throw exception::MatrixNotSquareNorCvector("clara::ptranspose()");
 }
 
 /**
@@ -1257,7 +1257,7 @@ dyn_mat<typename Derived::Scalar> syspermute(const Eigen::MatrixBase<Derived>& A
       result(worker(i)) = rA(i);
     return reshape(result, D, D);
   } else
-    throw exception::MatrixNotSquareNotCvector("clara::syspermute()");
+    throw exception::MatrixNotSquareNorCvector("clara::syspermute()");
 }
 
 /**

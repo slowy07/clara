@@ -23,7 +23,7 @@
 
 #include <charconv>
 #include <complex>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <type_traits>
 
 namespace clara {
